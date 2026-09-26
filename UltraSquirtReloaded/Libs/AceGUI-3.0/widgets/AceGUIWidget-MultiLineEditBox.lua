@@ -106,11 +106,7 @@ end
 local function OnReceiveDrag(self)                                               -- EditBox / ScrollFrame
 	local type, id, info, extra = GetCursorInfo()
 	if type == "spell" then
-		if C_Spell and C_Spell.GetSpellName then
-			info = C_Spell.GetSpellName(extra)
-		else
-			info = GetSpellInfo(id, info)
-		end
+		info = C_Spell.GetSpellName(extra)
 	elseif type ~= "item" then
 		return
 	end

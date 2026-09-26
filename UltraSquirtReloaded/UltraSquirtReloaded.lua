@@ -1,3 +1,5 @@
+-- luacheck: globals Rematch RematchDialog RematchSaved RematchSettings GossipFrameTitleText UltraSquirtReloadedScanningTooltip UltraSquirtReloadedScanningTooltipTextLeft1
+
 local AddonName, AddonTable = ...
 
 ---@class USQ : AceAddon, AceAddon-3.0, AceConsole-3.0, AceEvent-3.0, AceTimer-3.0, AceHook-3.0
@@ -280,13 +282,6 @@ function USQ:OnEnable()
                 inline = true,
                 order = 10,
                 args = {
-                    keybind = {
-                        type = "keybinding",
-                        name = KEY_BINDING,
-                        set = function(info, val) USQ.db.global.KEYBIND = val end,
-                        get = function(info) return USQ.db.global.KEYBIND end,
-                        order = 10,
-                    },
                     muteenabledisablemessages = {
                         type = "toggle",
                         name = L["Mute Addon Enabled and Disabled Messages"],
@@ -827,8 +822,8 @@ USQ.CachedCVars = {}
 
 function USQ:CacheCVars()
     USQ.Debug(1, "Caching CVars")
-    USQ.CachedCVars["AutoInteract"] = GetCVar("autoInteract")
-    USQ.CachedCVars["SoftTargetInteract"] = GetCVar("SoftTargetInteract")
+    USQ.CachedCVars["AutoInteract"] = C_CVar.GetCVar("autoInteract")
+    USQ.CachedCVars["SoftTargetInteract"] = C_CVar.GetCVar("SoftTargetInteract")
 
     USQ.Debug(1, "AutoInteract = " .. tostring(USQ.CachedCVars["AutoInteract"]))
     USQ.Debug(1, "SoftTargetInteract = " .. tostring(USQ.CachedCVars["SoftTargetInteract"]))
@@ -836,14 +831,14 @@ end
 
 function USQ:ClearCVars()
     USQ.Debug(1, "Clearing CVars")
-    SetCVar("autoInteract", 0)
-    SetCVar("SoftTargetInteract", 0)
+    C_CVar.SetCVar("autoInteract", 0)
+    C_CVar.SetCVar("SoftTargetInteract", 0)
 end
 
 function USQ:ResetCVars()
     USQ.Debug(1, "Resetting CVars")
-    SetCVar("autoInteract", USQ.CachedCVars["AutoInteract"])
-    SetCVar("SoftTargetInteract", USQ.CachedCVars["SoftTargetInteract"])
+    C_CVar.SetCVar("autoInteract", USQ.CachedCVars["AutoInteract"])
+    C_CVar.SetCVar("SoftTargetInteract", USQ.CachedCVars["SoftTargetInteract"])
 end
 
 function USQ:ADDON_LOADED(eventName, addOnName)
@@ -1037,7 +1032,7 @@ function USQ:CreateRematchAdvancedTeamsMenu()
             -- assuming Rematch 5
             Rematch.menus:Register("UltraSquirtReloaded" .. expansionName, menu)
         end
-        
+
         table.insert(UltraSquirtReloadedExpansionsMenu, {
             text=expansionName,
             expansionName=expansionName,
@@ -1050,7 +1045,7 @@ function USQ:CreateRematchAdvancedTeamsMenu()
     -- create a MenuItem for the Rematch Teams menu, and insert to the Teams menu
 
     local TeamMenuItem = {text="UltraSquirtReloaded Advanced Teams", subMenu="UltraSquirtReloadedExpansionsMenu", }
-    
+
     if Rematch.Start then
         -- assuming Rematch 4
         Rematch:RegisterMenu("UltraSquirtReloadedExpansionsMenu", UltraSquirtReloadedExpansionsMenu)
@@ -1435,11 +1430,8 @@ function USQ:RefreshConfig()
 end
 
 function USQ.UpdateKeybind()
-    if USQ.db.global.KEYBIND == nil or USQ.db.global.KEYBIND == "" then
-        USQ.USQFrame.HotkeyFontString:SetText("<" .. L["Keybind Missing"] .. ">")
-    else
-        USQ.USQFrame.HotkeyFontString:SetText("<" .. USQ.db.global.KEYBIND .. ">")
-    end
+    local binding = C_KeyBindings.GetBindingByKey("ULTRASQUIRTRELOADED_ACTION")
+    USQ.USQFrame.HotkeyFontString:SetText("<" .. (binding ~= "" and binding or L["Keybind Missing"]) .. ">")
 end
 
 function USQ.UpdateSliderStatus()
@@ -1648,10 +1640,10 @@ end
 
 function USQ.Close()
     USQ.Debug(1, "Close: Combat Lockdown:" .. tostring(InCombatLockdown()))
-    -- SetCVar("AutoInteract", 0)
+    -- C_CVar.SetCVar("AutoInteract", 0)
     USQ:ResetCVars()
     if not InCombatLockdown() then
-        ClearOverrideBindings(USQ.USQFrame)
+        USQ.SetMacro("")
     end
     USQ:CancelAllTimers()
     USQ:ClearWaitFlag()
@@ -1701,7 +1693,6 @@ end
 function USQ.Update()
     -- runs when registered events are triggered, after certain event, on button clicks, and on a timer
     USQ.Debug(2, "Running Update")
-    local hotkey = USQ.db.global.KEYBIND
     local BattleNPCName = USQ:GetNPCName(USQ.BattleNPCID)
     local StableMasterSerrahNPCName = USQ:GetNPCName(79858)
     local StableMasterLioNPCName = USQ:GetNPCName(85418)
@@ -1716,19 +1707,16 @@ function USQ.Update()
 
     if USQ.USQFrame:IsShown() ~= true then
         USQ.Debug(2, "Frame is hidden, clear keybind and take no other action")
-        ClearOverrideBindings(USQ.USQFrame)
+        USQ.SetMacro("")
         return
     end
 
-    if hotkey == nil then
-        USQ.Debug(2, "Hotkey not set - take no action")
-    else
-        if C_PetBattles.IsInBattle() then
+    if C_PetBattles.IsInBattle() then
             -- In pet battle
             USQ.Debug(2, "In pet battle - setting hotkey to /click for TD Script auto button.  Disable IWT and CTM.")
-            SetCVar("autoInteract", 0)
-            ClearOverrideBindings(USQ.USQFrame)
-            SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "tdBattlePetScriptAutoButton", "LeftButton")
+            C_CVar.SetCVar("autoInteract", 0)
+            USQ.SetMacro("")
+            USQ.SetMacro("/click tdBattlePetScriptAutoButton LeftButton")
             -- Close any open gossip windows
             if GossipFrame:IsShown() then
                 C_GossipInfo.CloseGossip()
@@ -1738,25 +1726,25 @@ function USQ.Update()
             if Rematch then
                 if Rematch.Start and ((Rematch:IsTimerRunning("ReloadLoadIn") or Rematch:IsTimerRunning("TeamlessReloadLoadIn")) or (not Rematch.Start and Rematch.loadTeam:IsTeamLoading())) then
                     USQ.Debug(1, "Rematch is loaded, and is current loading a team.  Doing nothing until next update.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/target player")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                     return
                 end
             end
             if USQ.WaitFlag then
                 USQ.Debug(1, "WaitFlag = true.  Wait for flag to time out, or Rematch to load a new team.")
-                SetCVar("autoInteract", 0)
-                ClearOverrideBindings(USQ.USQFrame)
+                C_CVar.SetCVar("autoInteract", 0)
+                USQ.SetMacro("")
                 USQ.SetMacro("/target player")
-                SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 return
             end
             if not USQ.TargetConfirmed then
                 USQ.Debug(2, "Target not yet confirmed.  Checking for target.  Disable IWT and CTM.")
-                SetCVar("autoInteract", 0)
-                ClearOverrideBindings(USQ.USQFrame)
+                C_CVar.SetCVar("autoInteract", 0)
+                USQ.SetMacro("")
                 if (npcID == USQ.BattleNPCID) then
                     USQ.Debug(2, "Target matched. Set confirmed flag.")
                     USQ.TargetConfirmed = true
@@ -1764,7 +1752,7 @@ function USQ.Update()
                 else
                     USQ.Debug(2, "Target doesn't match.  Set macro to /targetexact [NPC].")
                     USQ.SetMacro("/targetexact " .. BattleNPCName)
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                     return
                 end
             end
@@ -1772,10 +1760,10 @@ function USQ.Update()
                 USQ.Debug(1, "Rematch team does not match expected Advanced Team.  Disable action button, then load expected team.")
                 -- If Rematch was going to switch out substitute pets, it should have done so by this point.
 
-                SetCVar("autoInteract", 0)
-                ClearOverrideBindings(USQ.USQFrame)
+                C_CVar.SetCVar("autoInteract", 0)
+                USQ.SetMacro("")
                 USQ.SetMacro("/target player")
-                SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
 
                 if RematchSaved[USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID][USQ.AdvancedTeam].RematchTeamKey] then
                     USQ.Debug(1, "Loading Advanced Team # " .. tostring(USQ.AdvancedTeam) .. ": " .. tostring(USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID][USQ.AdvancedTeam].RematchTeamKey))
@@ -1789,13 +1777,13 @@ function USQ.Update()
                 end
             end
             -- Revive Early USQ.db.global.AdvancedTeamsReviveEarly[npcID]
-            if EnableAdvancedTeams and USQ.db.global.AdvancedTeamsReviveEarly[USQ.BattleNPCID] and USQ.db.global.AutoReviveBattlePets == true and C_Spell.GetSpellCooldown(125439).duration == 0 and IsSpellKnown(125439) and #USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID] >= 1 and Rematch and USQ.BattledSinceHeal then
+            if EnableAdvancedTeams and USQ.db.global.AdvancedTeamsReviveEarly[USQ.BattleNPCID] and USQ.db.global.AutoReviveBattlePets == true and C_Spell.GetSpellCooldown(125439).duration == 0 and C_SpellBook.IsSpellKnown(125439, Enum.SpellBookSpellBank.Player) and #USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID] >= 1 and Rematch and USQ.BattledSinceHeal then
                 USQ.Debug(2, "Revive Early enabled.  Advanced Teams enabled for npc.  Rematch found.  Revive Battle Pets known and off CD.  Set button to /cast Revive Battle Pets.")
-                SetCVar("autoInteract", 0)
-                ClearOverrideBindings(USQ.USQFrame)
+                C_CVar.SetCVar("autoInteract", 0)
+                USQ.SetMacro("")
                 USQ.SetMacro("/cast " .. C_Spell.GetSpellInfo(125439).name)
                 -- USQ.SetMacro("/click UltraSquirtReloadedFrameReviveBattlePetsButton LeftButton")
-                SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 return
             end
             USQ.Debug(2, "Checking for pet damage")
@@ -1804,10 +1792,10 @@ function USQ.Update()
                 if EnableAdvancedTeams and #USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID] >= 1 and USQ.AdvancedTeam < #USQ.db.global.AdvancedTeamsList[USQ.BattleNPCID] and Rematch then
                     -- If Rematch was going to switch out substitute pets, it should have done so by this point.
                     USQ.Debug(1, "AdvancedTeams enabled, not yet at last team.  Disable action button, then load next team.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/target player")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
 
                     USQ.AdvancedTeam = USQ.AdvancedTeam + 1
                     -- This will reset to 1 when a Revive or a Bandage is successfully cast.
@@ -1816,34 +1804,34 @@ function USQ.Update()
                     -- USQ:WaitForTimer(2)
                     -- USQ:WaitForTimer(USQ.db.global.PetBattleCloseDelay)
                     return
-                elseif (USQ.db.global.AutoReviveBattlePets == true and C_Spell.GetSpellCooldown(125439).duration == 0 and IsSpellKnown(125439)) then
+                elseif (USQ.db.global.AutoReviveBattlePets == true and C_Spell.GetSpellCooldown(125439).duration == 0 and C_SpellBook.IsSpellKnown(125439, Enum.SpellBookSpellBank.Player)) then
                     USQ.Debug(2, "Pets damaged or below threshold, Revive Battle Pets known and off CD.  Set button to /cast Revive Battle Pets.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/cast " .. C_Spell.GetSpellInfo(125439).name)
                     -- USQ.SetMacro("/click UltraSquirtReloadedFrameReviveBattlePetsButton LeftButton")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 elseif USQ.db.global.AutoBandage == true and C_Item.GetItemCount(86143, false) > 0 and C_Item.GetItemInfo(86143) then
                     -- included C_Item.GetItemInfo(86143) in if just in case it returns nil (i.e. item details not yet in cache), which should also mean there are none in the inventory
                     USQ.Debug(2, "Pets damaged or below threshold, Revive Battle Pets disabled or on CD.  Set button to /use Battle Pet Bandage.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/use " .. (C_Item.GetItemInfo(86143)))
                     -- USQ.SetMacro("/click UltraSquirtReloadedFrameBandageButton LeftButton")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 elseif USQ.db.global.AutoLittleBuddyBiscuits == true and C_Item.GetItemCount(223970, false) > 0 and C_Item.GetItemInfo(223970) then
                     USQ.Debug(2, "Pets damaged or below threshold, Revive Battle Pets and Bandage both disabled, on cooldown, or ran out.  Set button to /use Little Buddy Biscuits.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/use " .. (C_Item.GetItemInfo(223970)))
                     -- USQ.SetMacro("/click UltraSquirtReloadedFrameLittleBuddyBiscuitsButton LeftButton")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 elseif USQ.npcInfo[USQ.BattleNPCID].canUseStableMaster then
                     USQ.Debug(2, "Pets damaged or below threshold, Revive Battle Pets disabled or on CD, Bandages disabled or none left, and fighting Garrison NPC, so use Stable Master to heal.")
                     if GossipFrame:IsShown() and (GossipFrameTitleText:GetText() == StableMasterLioNPCName or GossipFrameTitleText:GetText() == StableMasterSerrahNPCName) then -- GossipFrameNpcNameText:GetText()
                         USQ.Debug(2, "Running Squirt healing logic.  Gossip window open and NPC matches.  Select gossip option.")
-                        SetCVar("autoInteract", 0)
-                        ClearOverrideBindings(USQ.USQFrame)
+                        C_CVar.SetCVar("autoInteract", 0)
+                        USQ.SetMacro("")
                         --C_GossipInfo.SelectOption(1, "", true)
                         local gossipOptions = C_GossipInfo.GetOptions()
                         if(gossipOptions and gossipOptions[1]) then
@@ -1851,53 +1839,53 @@ function USQ.Update()
                         end
                     elseif (npcID == 85418 or npcID == 79858) then
                         USQ.Debug(2, "Pets damaged, target is Stable Master.  Set button to IWT and enable CTM.")
-                        SetCVar("autoInteract", 1)
-                        ClearOverrideBindings(USQ.USQFrame)
-                        SetOverrideBinding(USQ.USQFrame, true, hotkey, "INTERACTTARGET")
+                        C_CVar.SetCVar("autoInteract", 1)
+                        USQ.SetMacro("")
+                        USQ.SetMacro("/interact")
                     else
                         USQ.Debug(2, "Pets damaged, set macro to /target Stable Master.  Disable IWT and CTM.")
-                        SetCVar("autoInteract", 0)
-                        ClearOverrideBindings(USQ.USQFrame)
+                        C_CVar.SetCVar("autoInteract", 0)
+                        USQ.SetMacro("")
                         USQ.SetMacro("/targetexact " .. StableMasterLioNPCName .. "\n/targetexact " .. StableMasterSerrahNPCName)
-                        SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                     end
                 else
                     -- no action to take
                     USQ.Debug(2, "Pets damaged or below threshold, Revive Battle Pets and Bandage both disabled, on cooldown, or ran out.  Doing nothing...")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/target player")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 end
             else
                 -- Pets OK - get ready for battle
                 if USQ.db.global.AutoDarkmoonTopHat == true and C_Item.GetItemCount(171364, false) > 0 and C_Item.GetItemInfo(171364) and AuraUtil.FindAuraByName((C_Item.GetItemSpell(171364)), "player") == nil then
                     USQ.Debug(2, "Pets not damaged or above threshold, player has Darkmoon Top Hat, and buff is missing.  Set macro to /use Darkmoon Top Hat.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/use " .. (C_Item.GetItemInfo(171364)))
                     -- USQ.SetMacro("/click UltraSquirtReloadedFrameDarkmoonTopHatButton LeftButton")
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 elseif USQ.db.global.AutoSafariHat and PlayerHasToy(92738) and AuraUtil.FindAuraByName((C_Item.GetItemSpell(92738)), "player") == nil then
                     USQ.Debug(2, "Pets not damaged or above threshold, player has Safari Hat toy, and buff is missing.  Set macro to /use Safari Hat.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     local toyName = (select(2, C_ToyBox.GetToyInfo(92738)))
                     if toyName == nil or string.len(toyName) == 0 then
                         USQ.Debug(2, "Safari Hat toy info not found.  Wait for next update.  Doing nothing...")
-                        SetCVar("autoInteract", 0)
-                        ClearOverrideBindings(USQ.USQFrame)
+                        C_CVar.SetCVar("autoInteract", 0)
+                        USQ.SetMacro("")
                         USQ.SetMacro("/target player")
-                        SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                         return
                     else
                         USQ.SetMacro("/use " .. toyName)
-                        SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                     end
                 elseif GossipFrame:IsShown() and GossipFrameTitleText:GetText() == BattleNPCName then -- GossipFrameNpcNameText:GetText()
                     USQ.Debug(1, "Pets not damaged or above threshold, Gossip window open and NPC matches.  Select gossip option.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     --C_GossipInfo.SelectOption(1, "", true)
                     local gossipOptions = C_GossipInfo.GetOptions()
                     local battleGossipOptionID = USQ.npcInfo[USQ.BattleNPCID].battleGossipOptionID
@@ -1912,18 +1900,17 @@ function USQ.Update()
                     end
                 elseif (npcID == USQ.BattleNPCID) then
                     USQ.Debug(2, "Pets not damaged or above threshold, target matches.  Set button to IWT and enable CTM.")
-                    SetCVar("autoInteract", 1)
-                    ClearOverrideBindings(USQ.USQFrame)
-                    SetOverrideBinding(USQ.USQFrame, true, hotkey, "INTERACTTARGET", "LeftButton")
+                    C_CVar.SetCVar("autoInteract", 1)
+                    USQ.SetMacro("")
+                    USQ.SetMacro("/interact")
                 else
                     USQ.Debug(2, "Pets not damaged or above threshold, set macro to /targetexact [NPC].  Disable IWT and CTM.")
-                    SetCVar("autoInteract", 0)
-                    ClearOverrideBindings(USQ.USQFrame)
+                    C_CVar.SetCVar("autoInteract", 0)
+                    USQ.SetMacro("")
                     USQ.SetMacro("/targetexact " .. BattleNPCName)
-                    SetOverrideBindingClick(USQ.USQFrame, true, hotkey, "UltraSquirtReloadedButton", "LeftButton")
+
                 end
             end
-        end
     end
 end
 
@@ -2158,7 +2145,7 @@ end
 
 function USQ.DarkmoonTopHatButtonPreClick(button, buttonClicked)
     USQ.Debug(1, "DarkmoonTopHatButtonPreClick: button: " .. tostring(button:GetName()) .. " buttonClicked: " .. tostring(buttonClicked))
-    if not (AuraUtil.FindAuraByName((C_Item.GetItemSpell(171364)), "player") == nil) then
+    if AuraUtil.FindAuraByName(C_Item.GetItemSpell(171364), "player") ~= nil then
         USQ.Debug(1, "Darkmoon Top Hat buff is not missing, temporarily disabling button.")
         button:SetAttribute("type1", nil)
     end

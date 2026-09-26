@@ -396,6 +396,10 @@ do
 			end
 		end
 
+		if issecretvalue(a1) or issecretvalue(b1) then
+			return rowa < rowb;
+		end
+
 		if a1 == b1 then
 			if column.sortnext then
 				local nextcol = self.cols[column.sortnext];

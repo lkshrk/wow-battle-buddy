@@ -21,7 +21,7 @@ local USQ = UltraSquirtReloaded
 ---@field Bottom Texture
 ---@field Left Texture
 ---@field Right Texture
----@field CloseButton Button | UIPanelCloseButton
+---@field CloseButton Button
 ---@field TitleButton Button
 ---@field TitleButtonText FontString
 

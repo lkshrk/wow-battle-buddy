@@ -3,6 +3,8 @@ local L = LibStub("AceLocale-3.0"):NewLocale("UltraSquirtReloaded", "enUS", true
 
 if not L then return end
 
+L["Binding Header"] = "UltraSquirt Reloaded"
+L["Binding Action"] = "Perform UltraSquirt action"
 L["Keybind Missing"] = "The keybind is not set"
 L["Cannot Modify In Battle"] = "Cannot modify target pet battle NPC during a pet battle - please try again when the battle is over"
 L["Invalid Target"] = "Invalid target - please select a valid repeatable pet battle NPC and try again"

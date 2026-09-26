@@ -1380,7 +1380,7 @@ end
 
 function USQ.SetBattleNPCButton_OnClick(button, buttonClicked, down)
     USQ.Debug(1, "button: " .. tostring(button:GetName()) .. " buttonClicked: " .. tostring(buttonClicked) .. " down: " .. tostring(down))
-    local useKeyDownCvar = GetCVarBool("ActionButtonUseKeyDown")
+    local useKeyDownCvar = C_CVar.GetCVarBool("ActionButtonUseKeyDown")
     if InCombatLockdown() then
         USQ.Debug(1, "In combat - take no action")
     else
@@ -2116,7 +2116,7 @@ end
 
 function USQ.ItemButton_OnClick(button, buttonClicked, down)
     USQ.Debug(1, "button: " .. tostring(button:GetName()) .. " buttonClicked: " .. tostring(buttonClicked) .. " down: " .. tostring(down) .. " button.isTogglable: " .. tostring(button.isTogglable) .. " button.autoCastOption: " .. tostring(button.autoCastOption))
-    local useKeyDownCvar = GetCVarBool("ActionButtonUseKeyDown")
+    local useKeyDownCvar = C_CVar.GetCVarBool("ActionButtonUseKeyDown")
     if (down == useKeyDownCvar) and buttonClicked == "RightButton" and button.isTogglable == true then
         USQ.db.global[button.autoCastOption] = not(USQ.db.global[button.autoCastOption])
         USQ.Debug(1, "Updating AutoCast.  USQ.db.global[button.autoCastOption] = " .. tostring(USQ.db.global[button.autoCastOption]))

@@ -1,5 +1,5 @@
 <Bindings>
     <Binding name="ULTRASQUIRTRELOADED_ACTION" header="ULTRASQUIRTRELOADED">
-        UltraSquirtReloadedButton:Click()
+        CLICK UltraSquirtReloadedButton:LeftButton
     </Binding>
 </Bindings>

@@ -512,7 +512,6 @@ function USQ:OnEnable()
             ["color"] = {["r"] = 1.0, ["g"] = 1.0, ["b"] = 0, ["a"] = 1.0,},
             ["colorargs"] = nil,
             ["bgcolor"] = {["r"] = 0.0, ["g"] = 0.0, ["b"] = 0.0, ["a"] = 1.0,},
-            ["sort"] = "dsc",
             ["DoCellUpdate"] = nil,
         },
         {
@@ -522,7 +521,6 @@ function USQ:OnEnable()
             ["color"] = {["r"] = 1.0, ["g"] = 1.0, ["b"] = 0, ["a"] = 1.0,},
             ["colorargs"] = nil,
             ["bgcolor"] = {["r"] = 0.0, ["g"] = 0.0, ["b"] = 0.0, ["a"] = 1.0,},
-            ["sort"] = "dsc",
             ["DoCellUpdate"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, st, ...)
                 if fShow then
                     -- ref: C:\Games\World of Warcraft\_retail_\BlizzardInterfaceCode\Interface\FrameXML\ChatConfigFrame.xml #76

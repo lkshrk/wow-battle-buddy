@@ -31,8 +31,6 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 Libs\lib-st\lib-st.xml
 Libs\libdatabroker-1-1\LibDataBroker-1.1.lua
 
-Bindings.xml
-
 Locales\deDE.lua
 Locales\enUS.lua
 Locales\esES.lua

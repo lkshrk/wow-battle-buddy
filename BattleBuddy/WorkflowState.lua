@@ -24,9 +24,15 @@ local function IndexReasonsByID(reasons)
     local indexed = {}
 
     for _, reason in ipairs(reasons) do
-        if reason.reasonID then
-            indexed[reason.reasonID] = reason
+        if type(reason) ~= "table" or type(reason.reasonID) ~= "string" or reason.reasonID == "" then
+            return nil
         end
+
+        if indexed[reason.reasonID] then
+            return nil
+        end
+
+        indexed[reason.reasonID] = reason
     end
 
     return indexed
@@ -55,6 +61,10 @@ function WorkflowState.ReviewResume(current, request)
 
     local currentReasons = IndexReasonsByID(current.pauseReasons)
     local presentedReasons = IndexReasonsByID(request.presentedReasons)
+
+    if not currentReasons or not presentedReasons then
+        return "review_required", current
+    end
 
     for reasonID, currentReason in pairs(currentReasons) do
         local presentedReason = presentedReasons[reasonID]

@@ -62,3 +62,19 @@ status = BattleBuddyWorkflowState.ReviewResume(workflow, {
     },
 })
 AssertEqual(status, "review_required")
+
+status = BattleBuddyWorkflowState.ReviewResume(workflow, {
+    workflowGeneration = 7,
+    presentedReasons = {
+        { reasonID = "reason-1", contextToken = "source-7" },
+        { reasonID = "reason-1", contextToken = "source-7" },
+    },
+})
+AssertEqual(status, "review_required")
+
+local malformedWorkflow = BattleBuddyWorkflowState.New({
+    generation = 7,
+    pauseReasons = { "SCRIPT_FAILURE" },
+})
+status = BattleBuddyWorkflowState.ReviewResume(malformedWorkflow, request)
+AssertEqual(status, "review_required")

@@ -38,10 +38,12 @@ end
 function Browser.BuildView(input)
     input = input or {}
     local filters = type(input.filters) == "table" and input.filters or {}
+    local encounters = input.encounters
     local rows = {}
     local selected = nil
+    local inputState = type(encounters) == "table" and "available" or "unavailable"
 
-    for _, encounter in ipairs(input.encounters or {}) do
+    for _, encounter in ipairs(encounters or {}) do
         local row = CopyRow(encounter)
         if row then
             if row.encounterID == input.selectedEncounterID then
@@ -76,11 +78,22 @@ function Browser.BuildView(input)
         end
     end
 
+    local hasFilters = IsText(filters.query) or IsText(filters.expansion) or IsText(filters.zone)
+        or IsText(filters.availability) or IsText(filters.support)
+    local emptyState
+    if inputState == "unavailable" then
+        emptyState = "Encounter content is unavailable."
+    elseif #rows == 0 then
+        emptyState = hasFilters and "No encounters match these filters."
+            or "No encounters are currently available."
+    end
+
     return {
         rows = rows,
         selectedEncounter = selected,
         selectedState = selectedState,
         hiddenSelection = selectedState == "hidden",
-        emptyState = #rows == 0 and "No encounters match these filters." or nil,
+        inputState = inputState,
+        emptyState = emptyState,
     }
 end

@@ -80,6 +80,19 @@ AssertEqual(browserView.emptyState, "No encounters match these filters.")
 view = Surface.BuildView(Surface.input)
 AssertEqual(view.reasonLines[1], "No encounters match these filters.")
 
+BattleBuddyEncounterBrowser.BuildView = function()
+    return {
+        selectedState = "none",
+        inputState = "unavailable",
+        emptyState = "Encounter content is unavailable.",
+    }
+end
+browserSet, browserView = Surface.SetEncounterBrowserInput({})
+AssertEqual(browserSet, true)
+AssertEqual(browserView.inputState, "unavailable")
+view = Surface.BuildView(Surface.input)
+AssertEqual(view.reasonLines[1], "Encounter content is unavailable.")
+
 BattleBuddyEncounterBrowser = nil
 local browserSetState, browserSetReason = Surface.SetEncounterBrowserInput({})
 AssertEqual(browserSetState, false)

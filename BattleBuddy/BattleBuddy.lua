@@ -47,6 +47,18 @@ end
 local function Initialize()
     BattleBuddyPersistence.Load()
     RegisterSettings()
+
+    if type(BattleBuddyEncounterContent) ~= "table" or type(BattleBuddyEncounterCatalog) ~= "table" then
+        return
+    end
+
+    local catalog = BattleBuddyEncounterCatalog.BuildView(BattleBuddyEncounterContent.BuildCatalogInput())
+    if catalog.state == "invalid" then
+        return
+    end
+
+    BattleBuddyEncounterCatalog.Current = catalog
+    BattleBuddyPetJournalSurface.SetEncounterBrowserInput(BattleBuddyEncounterCatalog.BuildBrowserInput(catalog))
 end
 
 EventUtil.ContinueOnAddOnLoaded(addonName, Initialize)

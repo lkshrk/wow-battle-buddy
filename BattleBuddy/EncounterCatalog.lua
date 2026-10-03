@@ -85,6 +85,32 @@ function Catalog.GetEncounter(catalog, encounterID)
     return record and { state = "found", encounter = Copy(record) } or { state = "missing", reason = "MISSING_ENCOUNTER" }
 end
 
+function Catalog.BuildBrowserInput(catalog, selectedEncounterID, filters)
+    if type(catalog) ~= "table" or catalog.state == "invalid" then
+        return { filters = filters, selectedEncounterID = selectedEncounterID }
+    end
+
+    local encounters = {}
+    for _, record in ipairs(catalog.records or {}) do
+        local content = type(record.content) == "table" and record.content or {}
+        local support = type(record.support) == "table" and record.support or {}
+        encounters[#encounters + 1] = {
+            encounterID = record.encounterID,
+            label = record.display.fallbackLabel,
+            expansion = content.expansion,
+            zone = content.zone,
+            availability = "unknown",
+            support = support.state or "unverified",
+        }
+    end
+
+    return {
+        encounters = encounters,
+        filters = filters,
+        selectedEncounterID = selectedEncounterID,
+    }
+end
+
 function Catalog.ValidateOverride(override, catalog)
     if type(override) ~= "table" or not Text(override.targetEncounterID)
         or not PositiveInteger(override.baseRecordRevision) or type(override.content) ~= "table" then

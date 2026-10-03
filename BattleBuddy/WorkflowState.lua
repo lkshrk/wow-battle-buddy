@@ -81,3 +81,15 @@ function WorkflowState.ReviewResume(current, request)
 
     return "accepted", current
 end
+
+function WorkflowState.Stop(current)
+    return WorkflowState.New({
+        generation = current.generation + 1,
+        requestedState = "stopped",
+        selectedTeamID = current.selectedTeamID,
+        pauseReasons = current.pauseReasons,
+        readinessBlockers = current.readinessBlockers,
+        healthWarnings = current.healthWarnings,
+        recommendedAction = current.recommendedAction,
+    })
+end

@@ -78,3 +78,14 @@ local malformedWorkflow = BattleBuddyWorkflowState.New({
 })
 status = BattleBuddyWorkflowState.ReviewResume(malformedWorkflow, request)
 AssertEqual(status, "review_required")
+
+local stopped = BattleBuddyWorkflowState.Stop(workflow)
+AssertEqual(stopped.generation, 8)
+AssertEqual(stopped.requestedState, "stopped")
+AssertEqual(stopped.selectedTeamID, "team-1")
+AssertEqual(stopped.pauseReasons[1].reasonID, "reason-1")
+AssertEqual(stopped.pauseReasons == workflow.pauseReasons, false)
+AssertEqual(stopped.pauseReasons[1] == workflow.pauseReasons[1], false)
+
+workflow.pauseReasons[1].contextToken = "changed-after-stop"
+AssertEqual(stopped.pauseReasons[1].contextToken, "source-7")

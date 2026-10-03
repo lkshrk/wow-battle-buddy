@@ -10,4 +10,5 @@ Compatibility.lua
 Evidence.lua
 Store.lua
 WorkflowState.lua
+PetJournalSurface.lua
 BattleBuddy.lua

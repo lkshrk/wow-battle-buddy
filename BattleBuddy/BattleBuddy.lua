@@ -1,7 +1,7 @@
 local addonName = ...
 
 local function OpenPetJournal()
-    ToggleCollectionsJournal(COLLECTIONS_JOURNAL_TAB_INDEX_PETS)
+    BattleBuddyPetJournalSurface.Open()
 end
 
 local function PrintHelp()

@@ -5,7 +5,9 @@ local outcomes = { faithful = true, reduced = true, blocked = true }
 local origins = { synthetic = true, ["user-authored"] = true, ["sanitized-reference-produced"] = true, unknown = true }
 local matrixStates = { source_inspected = true, not_collected = true, unimplemented = true, not_specified = true }
 local expectedProfiles = { rematch_current_legacy = true, pbs_v0 = true, pbs_v1 = true, pbs_v2 = true, embedded = true }
-local levels, IDs, profiles = {}, {}, {}
+local reservationStates = { specified = true, blocked = true }
+local expectedReservations = { ["RM-SLOTS-001"] = true, ["RM-SLOTS-002"] = true, ["RM-META-001"] = true, ["RM-META-002"] = true, ["RM-NOTES-001"] = true, ["PBS-V0-001"] = true, ["PBS-V1-001"] = true, ["PBS-V2-001"] = true, ["EMBED-001"] = true, ["OWNERSHIP-001"] = true, ["PRESERVE-001"] = true, ["LIMITS-001"] = true }
+local levels, IDs, profiles, reservations = {}, {}, {}, {}
 for _, level in ipairs(corpus.evidenceLevels) do levels[level] = true end
 Assert(corpus.schemaVersion == 1, "manifest schema version is required")
 for _, fixture in ipairs(corpus.fixtures) do
@@ -21,6 +23,13 @@ for _, fixture in ipairs(corpus.fixtures) do
   for _, level in ipairs(fixture.evidence) do Assert(levels[level], fixture.id .. " has unknown evidence") end
 end
 for _, id in ipairs({ "RM-CORE-001", "RM-SPECIAL-002", "PBS-BOUNDARIES-001", "EMBED-001" }) do Assert(IDs[id], "missing " .. id) end
+for _, reservation in ipairs(corpus.coverageReservations) do
+  Assert(type(reservation.id) == "string" and expectedReservations[reservation.id] and not reservations[reservation.id], "coverage reservations must be known and unique")
+  reservations[reservation.id] = true
+  Assert(type(reservation.scope) == "string" and reservation.scope ~= "", reservation.id .. " requires a scope")
+  Assert(reservationStates[reservation.status], reservation.id .. " has invalid status")
+end
+for id in pairs(expectedReservations) do Assert(reservations[id], "missing coverage reservation " .. id) end
 for _, profile in ipairs(corpus.versionMatrix) do
   Assert(type(profile.profile) == "string" and expectedProfiles[profile.profile] and not profiles[profile.profile], "matrix profiles must be known and unique")
   profiles[profile.profile] = true

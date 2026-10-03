@@ -89,3 +89,26 @@ AssertEqual(stopped.pauseReasons[1] == workflow.pauseReasons[1], false)
 
 workflow.pauseReasons[1].contextToken = "changed-after-stop"
 AssertEqual(stopped.pauseReasons[1].contextToken, "source-7")
+
+local paused, pauseError = BattleBuddyWorkflowState.Pause(stopped, {
+    reasonID = "reason-2",
+    code = "LINEUP_CHANGED",
+    contextToken = "lineup-8",
+})
+AssertEqual(pauseError, nil)
+AssertEqual(paused.generation, 9)
+AssertEqual(paused.requestedState, "paused")
+AssertEqual(#paused.pauseReasons, 2)
+AssertEqual(paused.pauseReasons[2].reasonID, "reason-2")
+
+local rejected, rejection = BattleBuddyWorkflowState.Pause(paused, {
+    reasonID = "reason-2",
+    code = "LINEUP_CHANGED",
+    contextToken = "newer-lineup",
+})
+AssertEqual(rejected, nil)
+AssertEqual(rejection, "duplicate_reason")
+
+rejected, rejection = BattleBuddyWorkflowState.Pause(paused, { code = "LOSS_LIMIT" })
+AssertEqual(rejected, nil)
+AssertEqual(rejection, "invalid_reason")

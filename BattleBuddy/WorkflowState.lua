@@ -82,6 +82,34 @@ function WorkflowState.ReviewResume(current, request)
     return "accepted", current
 end
 
+function WorkflowState.Pause(current, reason)
+    if not IndexReasonsByID({ reason }) then
+        return nil, "invalid_reason"
+    end
+
+    local reasons = CopyArray(current.pauseReasons)
+    local reasonByID = IndexReasonsByID(reasons)
+    if not reasonByID then
+        return nil, "invalid_current_reasons"
+    end
+
+    if reasonByID[reason.reasonID] then
+        return nil, "duplicate_reason"
+    end
+
+    reasons[#reasons + 1] = CopyArray({ reason })[1]
+
+    return WorkflowState.New({
+        generation = current.generation + 1,
+        requestedState = "paused",
+        selectedTeamID = current.selectedTeamID,
+        pauseReasons = reasons,
+        readinessBlockers = current.readinessBlockers,
+        healthWarnings = current.healthWarnings,
+        recommendedAction = current.recommendedAction,
+    })
+end
+
 function WorkflowState.Stop(current)
     return WorkflowState.New({
         generation = current.generation + 1,

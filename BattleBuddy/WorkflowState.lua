@@ -82,6 +82,27 @@ function WorkflowState.ReviewResume(current, request)
     return "accepted", current
 end
 
+function WorkflowState.Start(current)
+    local reasons = IndexReasonsByID(current.pauseReasons)
+    if not reasons then
+        return nil, "invalid_current_reasons"
+    end
+
+    if next(reasons) then
+        return nil, "review_required"
+    end
+
+    return WorkflowState.New({
+        generation = current.generation + 1,
+        requestedState = "running",
+        selectedTeamID = current.selectedTeamID,
+        pauseReasons = current.pauseReasons,
+        readinessBlockers = current.readinessBlockers,
+        healthWarnings = current.healthWarnings,
+        recommendedAction = current.recommendedAction,
+    })
+end
+
 function WorkflowState.Pause(current, reason)
     if not IndexReasonsByID({ reason }) then
         return nil, "invalid_reason"

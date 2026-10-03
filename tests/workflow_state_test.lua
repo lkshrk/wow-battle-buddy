@@ -79,6 +79,26 @@ local malformedWorkflow = BattleBuddyWorkflowState.New({
 status = BattleBuddyWorkflowState.ReviewResume(malformedWorkflow, request)
 AssertEqual(status, "review_required")
 
+local running, startError = BattleBuddyWorkflowState.Start(BattleBuddyWorkflowState.New({
+    generation = 3,
+    selectedTeamID = "team-2",
+}))
+AssertEqual(startError, nil)
+AssertEqual(running.generation, 4)
+AssertEqual(running.requestedState, "running")
+AssertEqual(running.selectedTeamID, "team-2")
+
+local startRejected, startRejection = BattleBuddyWorkflowState.Start(workflow)
+AssertEqual(startRejected, nil)
+AssertEqual(startRejection, "review_required")
+
+local invalidStart = BattleBuddyWorkflowState.New({
+    pauseReasons = { "SCRIPT_FAILURE" },
+})
+startRejected, startRejection = BattleBuddyWorkflowState.Start(invalidStart)
+AssertEqual(startRejected, nil)
+AssertEqual(startRejection, "invalid_current_reasons")
+
 local stopped = BattleBuddyWorkflowState.Stop(workflow)
 AssertEqual(stopped.generation, 8)
 AssertEqual(stopped.requestedState, "stopped")

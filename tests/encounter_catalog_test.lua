@@ -96,7 +96,13 @@ local overridden = Catalog.BuildView({
     },
 })
 Equal(overridden.state, "diagnostic")
-Equal(Catalog.GetEncounter(overridden, "shipped.solo").encounter.content.healingProfile, "safe-profile")
+local overriddenRecord = Catalog.GetEncounter(overridden, "shipped.solo").encounter
+Equal(overriddenRecord.content.healingProfile, "safe-profile")
+Equal(overriddenRecord.recordRevision, 1)
+Equal(overriddenRecord.effectiveRecordRevision, 2)
+local browserInput = Catalog.BuildBrowserInput(overridden)
+Equal(browserInput.encounters[1].recordRevision, 1)
+Equal(browserInput.encounters[1].effectiveRecordRevision, 2)
 Equal(overridden.diagnostics[1].reason, "OVERRIDE_BASE_CHANGED")
 
 local duplicatedOverride = Catalog.BuildView({

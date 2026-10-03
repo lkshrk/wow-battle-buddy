@@ -68,6 +68,7 @@ end
 
 local function ApplyOverride(record, override)
     for field, value in pairs(override.content) do record.content[field] = value end
+    record.effectiveRecordRevision = record.recordRevision + 1
 end
 
 function Catalog.BuildView(input)
@@ -91,8 +92,10 @@ function Catalog.BuildView(input)
                 end
                 selectorOwners[#selectorOwners + 1] = { encounterID = record.encounterID, selector = selector }
             end
-            view.records[#view.records + 1] = Copy(record)
-            view.recordsByID[record.encounterID] = Copy(record)
+            local copied = Copy(record)
+            copied.effectiveRecordRevision = copied.recordRevision
+            view.records[#view.records + 1] = copied
+            view.recordsByID[record.encounterID] = Copy(copied)
         end
     end
     if input.overrides ~= nil and not Array(input.overrides) then
@@ -141,6 +144,8 @@ function Catalog.BuildBrowserInput(catalog, selectedEncounterID, filters)
         encounters[#encounters + 1] = {
             encounterID = record.encounterID,
             label = record.display.fallbackLabel,
+            recordRevision = record.recordRevision,
+            effectiveRecordRevision = record.effectiveRecordRevision or record.recordRevision,
             expansion = content.expansion,
             zone = content.zone,
             availability = "unknown",

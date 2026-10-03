@@ -11,7 +11,7 @@ end
 AssertEqual(BattleBuddyConfig.Policy.LevelingCompletionLevel, 25)
 
 local pauseReasons = {
-    { reasonID = "reason-1", code = "SCRIPT_FAILURE", contextToken = "source-7" },
+    { reasonID = "reason-1", code = "SCRIPT_FAILURE", workflowGeneration = 7, contextToken = "source-7" },
 }
 local workflow = BattleBuddyWorkflowState.New({
     generation = 7,
@@ -35,6 +35,8 @@ local request = {
     presentedReasons = {
         { reasonID = "reason-1", contextToken = "source-7" },
     },
+    expectedContextTokens = { ["reason-1"] = "source-7" },
+    choices = { ["reason-1"] = "retry" },
 }
 
 local status, returnedWorkflow = BattleBuddyWorkflowState.ReviewResume(workflow, request)
@@ -52,6 +54,8 @@ status = BattleBuddyWorkflowState.ReviewResume(workflow, {
     presentedReasons = {
         { reasonID = "reason-1", contextToken = "stale-source" },
     },
+    expectedContextTokens = { ["reason-1"] = "stale-source" },
+    choices = { ["reason-1"] = "retry" },
 })
 AssertEqual(status, "review_required")
 
@@ -60,6 +64,8 @@ status = BattleBuddyWorkflowState.ReviewResume(workflow, {
     presentedReasons = {
         { reasonID = "reason-2", contextToken = "source-7" },
     },
+    expectedContextTokens = { ["reason-2"] = "source-7" },
+    choices = { ["reason-2"] = "retry" },
 })
 AssertEqual(status, "review_required")
 
@@ -69,14 +75,40 @@ status = BattleBuddyWorkflowState.ReviewResume(workflow, {
         { reasonID = "reason-1", contextToken = "source-7" },
         { reasonID = "reason-1", contextToken = "source-7" },
     },
+    expectedContextTokens = { ["reason-1"] = "source-7" },
+    choices = { ["reason-1"] = "retry" },
+})
+AssertEqual(status, "review_required")
+
+status = BattleBuddyWorkflowState.ReviewResume(workflow, {
+    workflowGeneration = 7,
+    presentedReasons = {
+        { reasonID = "reason-1", contextToken = "source-7" },
+    },
+    expectedContextTokens = {
+        ["reason-1"] = "source-7",
+        unexpected = "source-7",
+    },
+    choices = { ["reason-1"] = "retry" },
 })
 AssertEqual(status, "review_required")
 
 local malformedWorkflow = BattleBuddyWorkflowState.New({
     generation = 7,
+    requestedState = "paused",
     pauseReasons = { "SCRIPT_FAILURE" },
 })
 status = BattleBuddyWorkflowState.ReviewResume(malformedWorkflow, request)
+AssertEqual(status, "review_required")
+
+local sparseWorkflow = BattleBuddyWorkflowState.New({
+    generation = 7,
+    requestedState = "paused",
+    pauseReasons = {
+        [2] = { reasonID = "reason-1", code = "SCRIPT_FAILURE", workflowGeneration = 7, contextToken = "source-7" },
+    },
+})
+status = BattleBuddyWorkflowState.ReviewResume(sparseWorkflow, request)
 AssertEqual(status, "review_required")
 
 local running, startError = BattleBuddyWorkflowState.Start(BattleBuddyWorkflowState.New({
@@ -107,8 +139,34 @@ AssertEqual(stopped.pauseReasons[1].reasonID, "reason-1")
 AssertEqual(stopped.pauseReasons == workflow.pauseReasons, false)
 AssertEqual(stopped.pauseReasons[1] == workflow.pauseReasons[1], false)
 
+local resumedStatus, resumed = BattleBuddyWorkflowState.Resume(workflow, request)
+AssertEqual(resumedStatus, "accepted")
+AssertEqual(resumed.generation, 8)
+AssertEqual(resumed.requestedState, "running")
+AssertEqual(#resumed.pauseReasons, 0)
+
 workflow.pauseReasons[1].contextToken = "changed-after-stop"
 AssertEqual(stopped.pauseReasons[1].contextToken, "source-7")
+
+resumedStatus, resumed = BattleBuddyWorkflowState.Resume(stopped, {
+    workflowGeneration = 8,
+    presentedReasons = {
+        { reasonID = "reason-1", contextToken = "source-7" },
+    },
+    expectedContextTokens = { ["reason-1"] = "source-7" },
+    choices = { ["reason-1"] = "retry" },
+})
+AssertEqual(resumedStatus, "review_required")
+AssertEqual(resumed, stopped)
+
+resumedStatus, resumed = BattleBuddyWorkflowState.Resume(workflow, {
+    workflowGeneration = 7,
+    presentedReasons = request.presentedReasons,
+    expectedContextTokens = { ["reason-1"] = "source-7" },
+    choices = { ["reason-1"] = "fresh_allowance" },
+})
+AssertEqual(resumedStatus, "review_required")
+AssertEqual(resumed, workflow)
 
 local paused, pauseError = BattleBuddyWorkflowState.Pause(stopped, {
     reasonID = "reason-2",
@@ -120,6 +178,7 @@ AssertEqual(paused.generation, 9)
 AssertEqual(paused.requestedState, "paused")
 AssertEqual(#paused.pauseReasons, 2)
 AssertEqual(paused.pauseReasons[2].reasonID, "reason-2")
+AssertEqual(paused.pauseReasons[2].workflowGeneration, 9)
 
 local rejected, rejection = BattleBuddyWorkflowState.Pause(paused, {
     reasonID = "reason-2",
@@ -130,5 +189,13 @@ AssertEqual(rejected, nil)
 AssertEqual(rejection, "duplicate_reason")
 
 rejected, rejection = BattleBuddyWorkflowState.Pause(paused, { code = "LOSS_LIMIT" })
+AssertEqual(rejected, nil)
+AssertEqual(rejection, "invalid_reason")
+
+rejected, rejection = BattleBuddyWorkflowState.Pause(paused, {
+    reasonID = "reason-3",
+    code = "UNSUPPORTED_REASON",
+    contextToken = "unsupported",
+})
 AssertEqual(rejected, nil)
 AssertEqual(rejection, "invalid_reason")

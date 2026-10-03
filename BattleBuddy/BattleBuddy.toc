@@ -8,5 +8,6 @@
 Config.lua
 Compatibility.lua
 Evidence.lua
+Store.lua
 WorkflowState.lua
 BattleBuddy.lua

@@ -12,5 +12,6 @@ Evidence.lua
 Store.lua
 Persistence.lua
 WorkflowState.lua
+EncounterBrowser.lua
 PetJournalSurface.lua
 BattleBuddy.lua

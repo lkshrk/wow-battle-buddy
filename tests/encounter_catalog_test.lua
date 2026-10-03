@@ -99,4 +99,17 @@ Equal(overridden.state, "diagnostic")
 Equal(Catalog.GetEncounter(overridden, "shipped.solo").encounter.content.healingProfile, "safe-profile")
 Equal(overridden.diagnostics[1].reason, "OVERRIDE_BASE_CHANGED")
 
+local duplicatedOverride = Catalog.BuildView({
+    schemaVersion = 1,
+    catalogRevision = 4,
+    records = { Record("shipped.solo", 456) },
+    overrides = {
+        { targetEncounterID = "shipped.solo", baseRecordRevision = 1, content = { healingProfile = "first-profile" } },
+        { targetEncounterID = "shipped.solo", baseRecordRevision = 1, content = { healingProfile = "second-profile" } },
+    },
+})
+Equal(duplicatedOverride.state, "diagnostic")
+Equal(Catalog.GetEncounter(duplicatedOverride, "shipped.solo").encounter.content.healingProfile, "first-profile")
+Equal(duplicatedOverride.diagnostics[1].reason, "ID_COLLISION")
+
 Equal(Catalog.BuildView({ schemaVersion = 2, catalogRevision = 1, records = {} }).state, "invalid")

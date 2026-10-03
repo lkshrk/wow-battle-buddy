@@ -98,11 +98,16 @@ function Catalog.BuildView(input)
     if input.overrides ~= nil and not Array(input.overrides) then
         view.diagnostics[#view.diagnostics + 1] = { reason = "INVALID_RECORD" }
     else
+        local overriddenIDs = {}
         for _, override in ipairs(input.overrides or {}) do
             local targetID = type(override) == "table" and override.targetEncounterID or nil
             local target = view.recordsByID[targetID]
             local valid, result = ValidateOverride(override, target)
+            if valid and overriddenIDs[targetID] then
+                valid, result = false, "ID_COLLISION"
+            end
             if valid then
+                overriddenIDs[targetID] = true
                 ApplyOverride(target, result)
                 for _, record in ipairs(view.records) do
                     if record.encounterID == target.encounterID then ApplyOverride(record, result) end

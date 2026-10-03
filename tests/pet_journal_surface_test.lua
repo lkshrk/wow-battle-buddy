@@ -54,6 +54,25 @@ view = Surface.BuildView({
 })
 AssertEqual(view.workflowText, "Workflow status is unavailable. Team is applied.")
 
+BattleBuddyEncounterBrowser = {
+    BuildView = function()
+        return {
+            selectedEncounter = { label = "Cinder Pup" },
+            selectedState = "selected",
+        }
+    end,
+}
+local browserSet, browserView = Surface.SetEncounterBrowserInput({})
+AssertEqual(browserSet, true)
+AssertEqual(browserView.selectedEncounter.label, "Cinder Pup")
+view = Surface.BuildView(Surface.input)
+AssertEqual(view.selectionText, "Cinder Pup")
+
+BattleBuddyEncounterBrowser = nil
+local browserSetState, browserSetReason = Surface.SetEncounterBrowserInput({})
+AssertEqual(browserSetState, false)
+AssertEqual(browserSetReason, "unavailable")
+
 local opened, state = Surface.Open()
 AssertEqual(opened, false)
 AssertEqual(state, "unavailable")

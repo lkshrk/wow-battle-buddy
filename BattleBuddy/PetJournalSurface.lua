@@ -147,6 +147,31 @@ function Surface.SetInput(input)
     Surface.Render(input)
 end
 
+function Surface.SetEncounterBrowserInput(input)
+    if type(BattleBuddyEncounterBrowser) ~= "table" then
+        return false, "unavailable"
+    end
+
+    local browserView = BattleBuddyEncounterBrowser.BuildView(input)
+    local selectedEncounter = browserView.selectedEncounter and {
+        state = browserView.selectedState,
+        label = browserView.selectedEncounter.label,
+    } or {
+        state = browserView.selectedState,
+    }
+    local surfaceInput = {}
+    for key, value in pairs(Surface.input or {}) do
+        surfaceInput[key] = value
+    end
+    surfaceInput.selectedEncounter = selectedEncounter
+    if browserView.emptyState then
+        surfaceInput.statusMessage = browserView.emptyState
+    end
+
+    Surface.SetInput(surfaceInput)
+    return true, browserView
+end
+
 function Surface.Open()
     if type(SetCollectionsJournalShown) ~= "function" then
         return false, "unavailable"

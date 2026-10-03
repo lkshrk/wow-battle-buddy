@@ -4,11 +4,13 @@
 ## Author: lkshrk
 ## Version: @project-version@
 ## Category-enUS: Pet Battles
+## SavedVariables: BattleBuddyDB
 
 Config.lua
 Compatibility.lua
 Evidence.lua
 Store.lua
+Persistence.lua
 WorkflowState.lua
 PetJournalSurface.lua
 BattleBuddy.lua

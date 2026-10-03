@@ -28,4 +28,9 @@ local function RegisterSettings()
     end
 end
 
-EventUtil.ContinueOnAddOnLoaded(addonName, RegisterSettings)
+local function Initialize()
+    BattleBuddyPersistence.Load()
+    RegisterSettings()
+end
+
+EventUtil.ContinueOnAddOnLoaded(addonName, Initialize)

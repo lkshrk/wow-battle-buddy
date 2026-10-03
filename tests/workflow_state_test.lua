@@ -9,6 +9,14 @@ local function AssertEqual(actual, expected)
 end
 
 AssertEqual(BattleBuddyConfig.Policy.LevelingCompletionLevel, 25)
+BattleBuddyDB = { settingOverrides = {} }
+AssertEqual(BattleBuddyConfig.GetSetting("showPetJournalPanel"), true)
+AssertEqual(BattleBuddyConfig.GetSetting("showRevisionDetails"), false)
+AssertEqual(BattleBuddyConfig.SetSetting("showRevisionDetails", true), true)
+AssertEqual(BattleBuddyConfig.GetSetting("showRevisionDetails"), true)
+AssertEqual(BattleBuddyConfig.SetSetting("showRevisionDetails", false), true)
+AssertEqual(BattleBuddyDB.settingOverrides.showRevisionDetails, nil)
+AssertEqual(BattleBuddyConfig.SetSetting("missing", true), false)
 
 local pauseReasons = {
     { reasonID = "reason-1", code = "SCRIPT_FAILURE", workflowGeneration = 7, contextToken = "source-7" },

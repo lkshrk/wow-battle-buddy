@@ -29,6 +29,19 @@ local function RegisterSettings()
     local category = Settings.RegisterVerticalLayoutCategory(addonName)
     Settings.RegisterAddOnCategory(category)
 
+    if type(Settings.RegisterAddOnSetting) == "function" and type(Settings.CreateCheckbox) == "function"
+        and type(BattleBuddyDB) == "table" and type(BattleBuddyDB.settingOverrides) == "table" then
+        local panelSetting = Settings.RegisterAddOnSetting(category, "showPetJournalPanel", "Show BattleBuddy in the Pet Journal",
+            BattleBuddyDB.settingOverrides, Settings.VarType.Boolean, true)
+        Settings.CreateCheckbox(category, panelSetting,
+            "Show the additive BattleBuddy encounter panel when /bb opens the Pet Journal. This never starts a battle or applies a team.")
+
+        local revisionSetting = Settings.RegisterAddOnSetting(category, "showRevisionDetails", "Show encounter revision details",
+            BattleBuddyDB.settingOverrides, Settings.VarType.Boolean, false)
+        Settings.CreateCheckbox(category, revisionSetting,
+            "Show source and effective encounter record revisions in BattleBuddy's selected-encounter summary.")
+    end
+
     _G.SLASH_BATTLEBUDDY1 = "/bb"
     SlashCmdList.BATTLEBUDDY = function(command)
         command = type(command) == "string" and command:lower():match("^%s*(.-)%s*$") or ""

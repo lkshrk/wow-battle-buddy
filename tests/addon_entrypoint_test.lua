@@ -21,7 +21,7 @@ BattleBuddyPetJournalSurface = {
 }
 local loadCalls = 0
 BattleBuddyPersistence = { Load = function() loadCalls = loadCalls + 1 end }
-BattleBuddyDB = { encounterOverrides = { { targetEncounterID = "shipped.example" } } }
+BattleBuddyDB = { encounterOverrides = { { targetEncounterID = "shipped.example" } }, settingOverrides = {} }
 local capturedCatalogInput
 BattleBuddyEncounterContent = { BuildCatalogInput = function() return { schemaVersion = 1, catalogRevision = 1, records = {} } end }
 BattleBuddyEncounterCatalog = {
@@ -34,11 +34,18 @@ BattleBuddyEncounterCatalog = {
 BattleBuddyPetJournalSurface.SetEncounterBrowserInput = function() end
 
 local settingsOpenID
+local registeredSettings = {}
 Settings = {
+    VarType = { Boolean = "boolean" },
     RegisterVerticalLayoutCategory = function()
         return { GetID = function() return "101" end }
     end,
     RegisterAddOnCategory = function() end,
+    RegisterAddOnSetting = function(_, key, label, _, _, default)
+        registeredSettings[#registeredSettings + 1] = { key = key, label = label, default = default }
+        return key
+    end,
+    CreateCheckbox = function() end,
     OpenToCategory = function(id) settingsOpenID = id end,
 }
 SlashCmdList = {}
@@ -47,6 +54,9 @@ dofile(sourceRoot .. "/BattleBuddy/BattleBuddy.lua")
 loadCallback("BattleBuddy")
 AssertEqual(loadCalls, 1)
 AssertEqual(capturedCatalogInput.overrides, BattleBuddyDB.encounterOverrides)
+AssertEqual(#registeredSettings, 2)
+AssertEqual(registeredSettings[1].key, "showPetJournalPanel")
+AssertEqual(registeredSettings[2].key, "showRevisionDetails")
 
 SlashCmdList.BATTLEBUDDY("")
 AssertEqual(openCalls, 1)

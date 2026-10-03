@@ -156,6 +156,7 @@ PetJournal = journal
 AssertEqual(Surface.Attach(), true)
 AssertEqual(createdPanel.width, 400)
 AssertEqual(createdPanel.height, 50)
+AssertEqual(createdPanel.parent, journal)
 AssertEqual(createdPanel.points[1][1], "BOTTOMLEFT")
 AssertEqual(createdPanel.points[1][2], journal.RightInset)
 AssertEqual(createdPanel.points[2][1], "BOTTOMRIGHT")
@@ -166,5 +167,6 @@ Surface.frame = nil
 PetJournal = NewFrame()
 function PetJournal:GetFrameLevel() return 5 end
 AssertEqual(Surface.Attach(), true)
+AssertEqual(createdPanel.parent, PetJournal)
 AssertEqual(createdPanel.points[1][1], "BOTTOM")
 AssertEqual(createdPanel.points[1][2], PetJournal)

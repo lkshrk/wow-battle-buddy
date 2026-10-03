@@ -71,11 +71,12 @@ local function CreateSurface(petJournal)
         return Surface.frame
     end
 
+    local inset = petJournal.RightInset
     local panel = CreateFrame("Frame", nil, petJournal)
     panel:SetSize(400, 50)
-    if petJournal.RightInset then
-        panel:SetPoint("BOTTOMLEFT", petJournal.RightInset, "BOTTOMLEFT", 5, 3)
-        panel:SetPoint("BOTTOMRIGHT", petJournal.RightInset, "BOTTOMRIGHT", -5, 3)
+    if inset then
+        panel:SetPoint("BOTTOMLEFT", inset, "BOTTOMLEFT", 5, 3)
+        panel:SetPoint("BOTTOMRIGHT", inset, "BOTTOMRIGHT", -5, 3)
     else
         panel:SetPoint("BOTTOM", petJournal, "BOTTOM", 0, 2)
     end
@@ -116,6 +117,9 @@ local function CreateSurface(petJournal)
         GameTooltip:Show()
     end)
     panel:SetScript("OnLeave", GameTooltip_Hide)
+    panel:SetScript("OnShow", function()
+        Surface.Render(Surface.input)
+    end)
     panel:EnableMouse(true)
 
     Surface.frame = panel

@@ -5,4 +5,5 @@
 ## Version: @project-version@
 ## Category-enUS: Pet Battles
 
+Compatibility.lua
 BattleBuddy.lua

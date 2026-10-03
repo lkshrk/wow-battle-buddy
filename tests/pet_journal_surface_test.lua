@@ -54,6 +54,10 @@ view = Surface.BuildView({
 })
 AssertEqual(view.workflowText, "Workflow status is unavailable. Team is applied.")
 
+view = Surface.BuildView(false)
+AssertEqual(view.selectionText, "No encounter selected. Choose an encounter when BattleBuddy content is available.")
+AssertEqual(view.reasonLines[1], "No workflow blockers are currently reported.")
+
 BattleBuddyEncounterBrowser = {
     BuildView = function()
         return {

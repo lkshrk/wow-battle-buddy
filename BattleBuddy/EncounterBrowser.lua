@@ -36,7 +36,7 @@ local function CopyRow(encounter)
 end
 
 function Browser.BuildView(input)
-    input = input or {}
+    input = type(input) == "table" and input or {}
     local filters = type(input.filters) == "table" and input.filters or {}
     local encounters = input.encounters
     local rows = {}

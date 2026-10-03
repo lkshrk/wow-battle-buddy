@@ -33,7 +33,7 @@ local function WorkflowText(workflow)
 end
 
 function Surface.BuildView(input)
-    input = input or {}
+    input = type(input) == "table" and input or {}
 
     local selected = input.selectedEncounter
     local selectionText

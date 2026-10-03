@@ -43,3 +43,7 @@ AssertEqual(view.emptyState, "No encounters are currently available.")
 view = Browser.BuildView({ filters = { query = "cinder" } })
 AssertEqual(view.inputState, "unavailable")
 AssertEqual(view.emptyState, "Encounter content is unavailable.")
+
+view = Browser.BuildView(false)
+AssertEqual(view.inputState, "unavailable")
+AssertEqual(view.emptyState, "Encounter content is unavailable.")

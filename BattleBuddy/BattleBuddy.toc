@@ -5,5 +5,7 @@
 ## Version: @project-version@
 ## Category-enUS: Pet Battles
 
+Config.lua
 Compatibility.lua
+WorkflowState.lua
 BattleBuddy.lua

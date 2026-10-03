@@ -6,10 +6,30 @@ local function CopyArray(values)
     local copy = {}
 
     for index, value in ipairs(values or {}) do
-        copy[index] = value
+        if type(value) == "table" then
+            local copiedValue = {}
+            for key, field in pairs(value) do
+                copiedValue[key] = field
+            end
+            copy[index] = copiedValue
+        else
+            copy[index] = value
+        end
     end
 
     return copy
+end
+
+local function IndexReasonsByID(reasons)
+    local indexed = {}
+
+    for _, reason in ipairs(reasons) do
+        if reason.reasonID then
+            indexed[reason.reasonID] = reason
+        end
+    end
+
+    return indexed
 end
 
 function WorkflowState.New(options)
@@ -26,14 +46,28 @@ function WorkflowState.New(options)
     }
 end
 
-function WorkflowState.Continue(current)
-    return WorkflowState.New({
-        generation = current.generation + 1,
-        requestedState = "running",
-        selectedTeamID = current.selectedTeamID,
-        pauseReasons = current.pauseReasons,
-        readinessBlockers = current.readinessBlockers,
-        healthWarnings = current.healthWarnings,
-        recommendedAction = current.recommendedAction,
-    })
+function WorkflowState.ReviewResume(current, request)
+    request = request or {}
+
+    if request.workflowGeneration ~= current.generation then
+        return "review_required", current
+    end
+
+    local currentReasons = IndexReasonsByID(current.pauseReasons)
+    local presentedReasons = IndexReasonsByID(request.presentedReasons)
+
+    for reasonID, currentReason in pairs(currentReasons) do
+        local presentedReason = presentedReasons[reasonID]
+        if not presentedReason or presentedReason.contextToken ~= currentReason.contextToken then
+            return "review_required", current
+        end
+    end
+
+    for reasonID in pairs(presentedReasons) do
+        if not currentReasons[reasonID] then
+            return "review_required", current
+        end
+    end
+
+    return "accepted", current
 end

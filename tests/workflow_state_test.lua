@@ -10,7 +10,9 @@ end
 
 AssertEqual(BattleBuddyConfig.Policy.LevelingCompletionLevel, 25)
 
-local pauseReasons = { "SCRIPT_FAILURE" }
+local pauseReasons = {
+    { reasonID = "reason-1", code = "SCRIPT_FAILURE", contextToken = "source-7" },
+}
 local workflow = BattleBuddyWorkflowState.New({
     generation = 7,
     requestedState = "paused",
@@ -18,16 +20,45 @@ local workflow = BattleBuddyWorkflowState.New({
     pauseReasons = pauseReasons,
 })
 
-pauseReasons[1] = "CHANGED"
+pauseReasons[1].code = "CHANGED"
 AssertEqual(workflow.generation, 7)
 AssertEqual(workflow.requestedState, "paused")
 AssertEqual(workflow.selectedTeamID, "team-1")
-AssertEqual(workflow.pauseReasons[1], "SCRIPT_FAILURE")
+AssertEqual(workflow.pauseReasons[1].code, "SCRIPT_FAILURE")
+AssertEqual(workflow.pauseReasons == pauseReasons, false)
+AssertEqual(workflow.pauseReasons[1] == pauseReasons[1], false)
 AssertEqual(#workflow.readinessBlockers, 0)
 AssertEqual(#workflow.healthWarnings, 0)
 
-local continued = BattleBuddyWorkflowState.Continue(workflow)
-AssertEqual(continued.generation, 8)
-AssertEqual(continued.requestedState, "running")
-AssertEqual(continued.pauseReasons[1], "SCRIPT_FAILURE")
-AssertEqual(continued.pauseReasons == workflow.pauseReasons, false)
+local request = {
+    workflowGeneration = 7,
+    presentedReasons = {
+        { reasonID = "reason-1", contextToken = "source-7" },
+    },
+}
+
+local status, returnedWorkflow = BattleBuddyWorkflowState.ReviewResume(workflow, request)
+AssertEqual(status, "accepted")
+AssertEqual(returnedWorkflow, workflow)
+
+status = BattleBuddyWorkflowState.ReviewResume(workflow, {
+    workflowGeneration = 6,
+    presentedReasons = request.presentedReasons,
+})
+AssertEqual(status, "review_required")
+
+status = BattleBuddyWorkflowState.ReviewResume(workflow, {
+    workflowGeneration = 7,
+    presentedReasons = {
+        { reasonID = "reason-1", contextToken = "stale-source" },
+    },
+})
+AssertEqual(status, "review_required")
+
+status = BattleBuddyWorkflowState.ReviewResume(workflow, {
+    workflowGeneration = 7,
+    presentedReasons = {
+        { reasonID = "reason-2", contextToken = "source-7" },
+    },
+})
+AssertEqual(status, "review_required")

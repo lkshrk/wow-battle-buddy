@@ -119,3 +119,52 @@ opened = Surface.Open()
 AssertEqual(opened, true)
 AssertEqual(shown, true)
 AssertEqual(tab, COLLECTIONS_JOURNAL_TAB_INDEX_PETS)
+
+
+local function NewFrame()
+    local frame = { points = {} }
+    function frame:SetSize(width, height) self.width, self.height = width, height end
+    function frame:SetPoint(...) self.points[#self.points + 1] = { ... } end
+    function frame:SetFrameLevel(level) self.frameLevel = level end
+    function frame:CreateFontString()
+        local text = {}
+        function text:SetPoint(...) end
+        function text:SetJustifyH(...) end
+        function text:SetWordWrap(...) end
+        function text:SetText(value) text.value = value end
+        return text
+    end
+    function frame:SetScript(...) end
+    function frame:EnableMouse(...) end
+    return frame
+end
+
+local createdPanel
+CreateFrame = function(_, _, parent)
+    createdPanel = NewFrame()
+    createdPanel.parent = parent
+    return createdPanel
+end
+local journal = NewFrame()
+journal.RightInset = NewFrame()
+function journal:GetFrameLevel() return 50 end
+Surface.frame = nil
+Surface.selection = nil
+Surface.workflow = nil
+Surface.reasons = nil
+PetJournal = journal
+AssertEqual(Surface.Attach(), true)
+AssertEqual(createdPanel.width, 400)
+AssertEqual(createdPanel.height, 50)
+AssertEqual(createdPanel.points[1][1], "BOTTOMLEFT")
+AssertEqual(createdPanel.points[1][2], journal.RightInset)
+AssertEqual(createdPanel.points[2][1], "BOTTOMRIGHT")
+AssertEqual(createdPanel.points[2][2], journal.RightInset)
+AssertEqual(createdPanel.frameLevel, 51)
+
+Surface.frame = nil
+PetJournal = NewFrame()
+function PetJournal:GetFrameLevel() return 5 end
+AssertEqual(Surface.Attach(), true)
+AssertEqual(createdPanel.points[1][1], "BOTTOM")
+AssertEqual(createdPanel.points[1][2], PetJournal)

@@ -72,8 +72,13 @@ local function CreateSurface(petJournal)
     end
 
     local panel = CreateFrame("Frame", nil, petJournal)
-    panel:SetSize(360, 50)
-    panel:SetPoint("BOTTOM", petJournal, "BOTTOM", 0, 2)
+    panel:SetSize(400, 50)
+    if petJournal.RightInset then
+        panel:SetPoint("BOTTOMLEFT", petJournal.RightInset, "BOTTOMLEFT", 5, 3)
+        panel:SetPoint("BOTTOMRIGHT", petJournal.RightInset, "BOTTOMRIGHT", -5, 3)
+    else
+        panel:SetPoint("BOTTOM", petJournal, "BOTTOM", 0, 2)
+    end
     panel:SetFrameLevel(petJournal:GetFrameLevel() + 1)
 
     local header = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")

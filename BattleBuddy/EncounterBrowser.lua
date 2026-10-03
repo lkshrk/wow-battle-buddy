@@ -28,6 +28,8 @@ local function CopyRow(encounter)
     return {
         encounterID = encounter.encounterID,
         label = label,
+        recordRevision = encounter.recordRevision,
+        effectiveRecordRevision = encounter.effectiveRecordRevision or encounter.recordRevision,
         expansion = encounter.expansion,
         zone = encounter.zone,
         availability = encounter.availability or "unknown",

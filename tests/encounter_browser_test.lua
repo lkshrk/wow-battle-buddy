@@ -10,7 +10,7 @@ end
 
 local Browser = BattleBuddyEncounterBrowser
 local encounters = {
-    { encounterID = "tww.1", display = { fallbackLabel = "Cinder Pup" }, expansion = "The War Within", zone = "Dornogal", availability = "available", support = "supported" },
+    { encounterID = "tww.1", display = { fallbackLabel = "Cinder Pup" }, recordRevision = 4, effectiveRecordRevision = 5, expansion = "The War Within", zone = "Dornogal", availability = "available", support = "supported" },
     { encounterID = "tww.2", label = "Hidden Fox", expansion = "The War Within", zone = "Dornogal", availability = "unknown", support = "unverified" },
     { encounterID = "old.1", label = "Old Turtle", expansion = "Dragonflight", zone = "Valdrakken", availability = "unavailable", support = "unsupported" },
     { encounterID = 12, label = "Invalid identity" },
@@ -20,6 +20,8 @@ local view = Browser.BuildView({ encounters = encounters, selectedEncounterID = 
 AssertEqual(#view.rows, 3)
 AssertEqual(view.selectedState, "selected")
 AssertEqual(view.selectedEncounter.label, "Hidden Fox")
+AssertEqual(view.rows[1].recordRevision, 4)
+AssertEqual(view.rows[1].effectiveRecordRevision, 5)
 
 view = Browser.BuildView({ encounters = encounters, selectedEncounterID ="tww.2", filters = { availability = "available" } })
 AssertEqual(#view.rows, 1)

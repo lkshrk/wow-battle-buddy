@@ -68,6 +68,18 @@ AssertEqual(browserView.selectedEncounter.label, "Cinder Pup")
 view = Surface.BuildView(Surface.input)
 AssertEqual(view.selectionText, "Cinder Pup")
 
+BattleBuddyEncounterBrowser.BuildView = function()
+    return {
+        selectedState = "none",
+        emptyState = "No encounters match these filters.",
+    }
+end
+browserSet, browserView = Surface.SetEncounterBrowserInput({})
+AssertEqual(browserSet, true)
+AssertEqual(browserView.emptyState, "No encounters match these filters.")
+view = Surface.BuildView(Surface.input)
+AssertEqual(view.reasonLines[1], "No encounters match these filters.")
+
 BattleBuddyEncounterBrowser = nil
 local browserSetState, browserSetReason = Surface.SetEncounterBrowserInput({})
 AssertEqual(browserSetState, false)

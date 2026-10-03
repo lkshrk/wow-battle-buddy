@@ -164,9 +164,7 @@ function Surface.SetEncounterBrowserInput(input)
         surfaceInput[key] = value
     end
     surfaceInput.selectedEncounter = selectedEncounter
-    if browserView.emptyState then
-        surfaceInput.statusMessage = browserView.emptyState
-    end
+    surfaceInput.statusMessage = browserView.emptyState
 
     Surface.SetInput(surfaceInput)
     return true, browserView

@@ -1,20 +1,25 @@
-# UltraSquirt Reloaded
+# BattleBuddy
 
-A maintained continuation of **UltraSquirt**, a quality-of-life addon for World of Warcraft pet battles. It works alongside [tdBattlePetScript](https://www.curseforge.com/wow/addons/tdbattlepetscript) and optionally [Rematch](https://www.curseforge.com/wow/addons/rematch) to streamline Squirt and repeatable Legion pet-tamer battles while leveling pets.
+BattleBuddy is a standalone, current-retail World of Warcraft pet-battle quality-of-life addon. It is being built for repeat battlers first and strategy authors second.
 
-## Installation
+Its interface builds on Blizzard’s Pet Journal and pet-battle UI rather than maintaining a competing standalone control window. BattleBuddy has no runtime dependency on Rematch, tdBattlePetScript, or inherited addon data.
 
-1. Download or clone this repository.
-2. Copy the `UltraSquirtReloaded` directory to your World of Warcraft `_retail_/Interface/AddOns/` directory.
-3. Ensure `tdBattlePetScript` is installed; install Rematch for its optional team integration.
-4. Start World of Warcraft and enable **UltraSquirt Reloaded** on the AddOns screen.
+## Current baseline
 
-Use `/ultra` to open the main window and `/ultra config` to open addon options.
+The M-1 identity boundary provides the clean BattleBuddy addon and native entry points:
+
+- `/bb` opens Blizzard’s Pet Journal on the Pets tab.
+- `/bb config` opens BattleBuddy in Blizzard Settings.
+- `/bb help` prints the available commands.
+
+The future native data model, repeat workflow, team editing, scripting, collection tools, and battle HUD are delivered as separate dependency-ordered milestones.
 
 ## Development
 
-The addon targets current retail WoW (`## Interface: 120100`). Run `wow-check UltraSquirtReloaded` in an appropriately configured WoW addon development environment before committing changes.
+BattleBuddy targets current retail WoW 12.1 (`## Interface: 120100`). Validate the addon with:
 
-## Attribution and license
+```sh
+wow-check BattleBuddy
+```
 
-UltraSquirt Reloaded is derived from UltraSquirt by Aspin and continues to be distributed under the [GNU General Public License v3.0](UltraSquirtReloaded/LICENSE). See the original source notices and bundled library licenses for additional attribution.
+A game sync and publishing are separately gated.

@@ -1,0 +1,8 @@
+## Interface: 120100
+## Title: BattleBuddy
+## Notes: Current-retail pet battle quality of life
+## Author: lkshrk
+## Version: @project-version@
+## Category-enUS: Pet Battles
+
+BattleBuddy.lua

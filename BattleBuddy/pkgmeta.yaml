@@ -1,0 +1,8 @@
+package-as: BattleBuddy
+
+ignore:
+  - .git/
+  - .gitattributes
+  - AGENTS.md
+
+license-output: LICENSE

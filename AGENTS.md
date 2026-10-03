@@ -1,65 +1,48 @@
-# UltraSquirt Reloaded contributor guide
+# BattleBuddy contributor guide
 
 ## Scope and layout
 
-- `UltraSquirtReloaded/` is the addon directory installed in `_retail_/Interface/AddOns/`.
-- `UltraSquirtReloaded.toc` is the load manifest. Its file order is runtime order; preserve it unless a dependency requires a change.
-- `UltraSquirtReloaded.lua` is the addon entry point and primary UI/command logic.
-- `UltraFactory.lua` and `UltraActions.lua` implement battle-script generation and actions.
-- `Locales/` contains AceLocale translations. Add new user-facing English keys in `Locales/enUS.lua`; add matching translations when possible.
-- `Libs/` is vendored third-party code. Do not edit or reformat it unless intentionally upgrading that dependency and preserving its license notices.
+- `BattleBuddy/` is the addon directory installed in `_retail_/Interface/AddOns/`.
+- `BattleBuddy/BattleBuddy.toc` is the ordered runtime load manifest.
+- `BattleBuddy/BattleBuddy.lua` currently establishes the small product boundary and native entry points. Expand the addon through focused modules as milestones are delivered.
+- `BattleBuddy/pkgmeta.yaml` defines release packaging metadata.
 
-## Addon identity
+## Product rules
 
-Keep these identifiers aligned when changing the addon identity:
+BattleBuddy is a standalone current-retail pet-battle QoL addon. Prioritize repeat battlers, then strategy authors.
 
-- Addon folder and TOC: `UltraSquirtReloaded`
-- Main script: `UltraSquirtReloaded/UltraSquirtReloaded.lua`
-- SavedVariables: `UltraSquirtReloadedSettingsDB`
-- Author: `lkshrk`
-- Retail interface version: `120100`
+- Build BattleBuddy-owned features; do not restore inherited interfaces, data migrations/imports, commands, or runtime dependencies.
+- Follow Blizzard’s default Pet Journal and pet-battle UI patterns. Extend native surfaces additively rather than creating a competing primary window.
+- Use Blizzard Settings for preferences.
+- Keep persistence, domain logic, client facts/actions, exchange codecs, and UI presenters independent as the architecture is added. UI refresh must never apply a team or dispatch a battle action.
 
-The addon has optional integrations with `Rematch`, `tdBattlePetScript`, and `tdBattlePetScript_Rematch`. Treat their globals as optional: test availability before using them and retain graceful behavior when they are absent.
+## Current-retail API rules
 
-## World of Warcraft API rules
+Target retail WoW 12.1. Before changing a WoW API call, query it with `wow-api <name>`; if it is not indexed, inspect the live FrameXML source at `~/.local/share/wow/wow-ui-source`.
 
-This project targets retail WoW 12.1 (Midnight). Do not rely on older API examples.
+- Prefer current namespaced APIs when available. Do not add removed legacy APIs or combat-log parsing.
+- Treat combat data as potentially secret. Do not compare, index with, or perform arithmetic on secret values.
+- Do not change protected or secure frames in combat.
 
-- Before changing a WoW API call, look it up with `wow-api <name>` in the WoW workspace.
-- Prefer namespaced APIs, e.g. `C_Spell.*`, `C_AddOns.*`, and `C_ActionBar.*`; legacy globals removed in modern retail must not be introduced.
-- Combat-related values can be secret. Do not compare, do arithmetic on, index with, or use secret values as table keys. Check `issecretvalue`/`canaccessvalue` and use supported widget, curve, or duration-object APIs instead.
-- `COMBAT_LOG_EVENT_UNFILTERED` is unavailable in current retail and must not be registered.
-- Do not manipulate protected or secure frames in combat. Defer protected changes until `PLAYER_REGEN_ENABLED`.
+## Validation and testing
 
-## Validation and in-game testing
-
-Work in the `dev/wow-addons` Coder workspace. Before editing, inspect current game errors:
+Work in the `dev/wow-addons` Coder workspace. Before edits, inspect existing errors with:
 
 ```sh
-wow-errors --match UltraSquirtReloaded
+wow-errors --match BattleBuddy
 ```
 
 Validate touched code before committing:
 
 ```sh
-cd ~/wow-ultrasquirt-reloaded
-wow-check UltraSquirtReloaded
+cd ~/wow-battle-buddy
+wow-check BattleBuddy
 ```
 
-`wow-check` must have no errors. Existing warnings around optional Rematch globals may be present; do not add new warnings in changed code. If using or changing a WoW API, validate its current signature first with `wow-api`.
-
-To test in game, always preview then sync the explicit addon path:
-
-```sh
-wow-sync --dry-run ~/wow-ultrasquirt-reloaded/UltraSquirtReloaded
-wow-sync ~/wow-ultrasquirt-reloaded/UltraSquirtReloaded
-```
-
-This sends a separate `UltraSquirtReloaded-Dev` copy and does not overwrite the released addon. Ask the user to `/reload`, exercise the change, then run `wow-errors --match UltraSquirtReloaded` again. Never sync without an explicit path. Before syncing name-related changes, check TOC dependency fields and repository source for references to `UltraSquirtReloaded`.
+A sync is separately gated. When authorized, preview the explicit addon path first, then sync only that path and ask the user to `/reload`. Do not sync an empty path or overwrite a released addon without explicit approval.
 
 ## Repository hygiene
 
-- The project is GPL-3.0. Keep `LICENSE`, upstream attribution, and licenses in `UltraSquirtReloaded/Libs/` intact.
-- Do not commit `_retail_` data, `WTF/`, `Cache/`, logs, packaged ZIPs, IDE files, or generated release output; `.gitignore` covers the usual cases.
-- Keep changes focused. Do not make drive-by reformatting changes to vendored libraries or unrelated localizations.
-- Commit after `wow-check` passes with no errors. Push only when requested.
+- Do not commit game data, SavedVariables, caches, logs, packaged archives, or generated output.
+- Keep package and source identity aligned: `BattleBuddy/`, `BattleBuddy.toc`, `BattleBuddy.lua`, and `package-as: BattleBuddy`.
+- Commit only after `wow-check` has no errors. Push only when requested.

@@ -39,6 +39,10 @@ view = Surface.BuildView({ selectedEncounter = { state = "stale" }, statusMessag
 AssertEqual(view.selectionText, "The selected encounter is stale. Refresh its evidence before continuing.")
 AssertEqual(view.reasonLines[1], "Catalog update required.")
 
+view = Surface.BuildView({ statusMessage = "No encounter content has been loaded yet." })
+AssertEqual(view.selectionText, "No encounter selected. Choose an encounter when BattleBuddy content is available.")
+AssertEqual(view.reasonLines[1], "No encounter content has been loaded yet.")
+
 view = Surface.BuildView({
     workflow = { requestedState = "paused", teamState = "draft" },
 })

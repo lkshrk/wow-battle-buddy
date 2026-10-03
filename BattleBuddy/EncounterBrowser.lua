@@ -42,10 +42,12 @@ function Browser.BuildView(input)
     local rows = {}
     local selected = nil
     local inputState = type(encounters) == "table" and "available" or "unavailable"
+    local knownEncounterCount = 0
 
     for _, encounter in ipairs(encounters or {}) do
         local row = CopyRow(encounter)
         if row then
+            knownEncounterCount = knownEncounterCount + 1
             if row.encounterID == input.selectedEncounterID then
                 selected = row
             end
@@ -85,7 +87,8 @@ function Browser.BuildView(input)
         emptyState = "Encounter content is unavailable."
     elseif #rows == 0 then
         emptyState = hasFilters and "No encounters match these filters."
-            or "No encounters are currently available."
+            or (knownEncounterCount == 0 and "No encounter content has been loaded yet."
+                or "No encounters are currently available.")
     end
 
     return {
@@ -94,6 +97,7 @@ function Browser.BuildView(input)
         selectedState = selectedState,
         hiddenSelection = selectedState == "hidden",
         inputState = inputState,
+        knownEncounterCount = knownEncounterCount,
         emptyState = emptyState,
     }
 end

@@ -4,6 +4,13 @@ local function OpenPetJournal()
     ToggleCollectionsJournal(COLLECTIONS_JOURNAL_TAB_INDEX_PETS)
 end
 
+local function PrintHelp()
+    print("|cff00ff98BattleBuddy|r — Available slash commands:")
+    print("  |cffffd100/bb|r — Open the Pet Journal on the Pets tab.")
+    print("  |cffffd100/bb config|r — Open BattleBuddy settings.")
+    print("  |cffffd100/bb help|r — Show this command list.")
+end
+
 local function RegisterSettings()
     local category = Settings.RegisterVerticalLayoutCategory(addonName)
     Settings.RegisterAddOnCategory(category)
@@ -14,7 +21,7 @@ local function RegisterSettings()
         if command == "config" then
             Settings.OpenToCategory(category:GetID())
         elseif command == "help" then
-            print("BattleBuddy: /bb opens the Pet Journal; /bb config opens Settings.")
+            PrintHelp()
         else
             OpenPetJournal()
         end

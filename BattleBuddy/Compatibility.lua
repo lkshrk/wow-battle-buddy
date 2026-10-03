@@ -2,12 +2,16 @@ BattleBuddyCompatibility = {}
 
 local Compatibility = BattleBuddyCompatibility
 
-function Compatibility.ClassifyValue(value)
-    if issecretvalue(value) then
+function Compatibility.ClassifyValue(value, inspectors)
+    inspectors = inspectors or {}
+    local isSecret = inspectors.isSecret or issecretvalue
+    local canAccess = inspectors.canAccess or canaccessvalue
+
+    if isSecret(value) then
         return nil, "secret"
     end
 
-    if not canaccessvalue(value) then
+    if not canAccess(value) then
         return nil, "restricted"
     end
 

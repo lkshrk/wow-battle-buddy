@@ -1,12 +1,26 @@
 local addonName = ...
 
 local function OpenPetJournal()
-    BattleBuddyPetJournalSurface.Open()
+    local opened = BattleBuddyPetJournalSurface.Open()
+    if opened then
+        return true
+    end
+
+    return false
+end
+
+local function OpenSettings(category)
+    if Settings and category then
+        Settings.OpenToCategory(category:GetID())
+        return true
+    end
+
+    return false
 end
 
 local function PrintHelp()
     print("|cff00ff98BattleBuddy|r — Available slash commands:")
-    print("  |cffffd100/bb|r — Open the Pet Journal on the Pets tab.")
+    print("  |cffffd100/bb|r — Focus BattleBuddy in the Pet Journal when available; otherwise open settings.")
     print("  |cffffd100/bb config|r — Open BattleBuddy settings.")
     print("  |cffffd100/bb help|r — Show this command list.")
 end
@@ -17,13 +31,15 @@ local function RegisterSettings()
 
     _G.SLASH_BATTLEBUDDY1 = "/bb"
     SlashCmdList.BATTLEBUDDY = function(command)
-        command = command:lower():match("^%s*(.-)%s*$")
+        command = type(command) == "string" and command:lower():match("^%s*(.-)%s*$") or ""
         if command == "config" then
-            Settings.OpenToCategory(category:GetID())
+            if not OpenSettings(category) then
+                print("|cffff0000BattleBuddy|r — Settings are unavailable.")
+            end
         elseif command == "help" then
             PrintHelp()
-        else
-            OpenPetJournal()
+        elseif not OpenPetJournal() and not OpenSettings(category) then
+            print("|cffff0000BattleBuddy|r — The Pet Journal and settings are unavailable.")
         end
     end
 end

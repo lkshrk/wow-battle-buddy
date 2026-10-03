@@ -148,8 +148,13 @@ function Surface.SetInput(input)
 end
 
 function Surface.Open()
+    if type(SetCollectionsJournalShown) ~= "function" then
+        return false, "unavailable"
+    end
+
     SetCollectionsJournalShown(true, COLLECTIONS_JOURNAL_TAB_INDEX_PETS)
     Surface.Attach()
+    return true
 end
 
 if EventUtil then

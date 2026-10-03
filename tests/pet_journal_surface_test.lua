@@ -54,11 +54,16 @@ view = Surface.BuildView({
 })
 AssertEqual(view.workflowText, "Workflow status is unavailable. Team is applied.")
 
+local opened, state = Surface.Open()
+AssertEqual(opened, false)
+AssertEqual(state, "unavailable")
+
 local shown, tab
 SetCollectionsJournalShown = function(requestedShown, requestedTab)
     shown = requestedShown
     tab = requestedTab
 end
-Surface.Open()
+opened = Surface.Open()
+AssertEqual(opened, true)
 AssertEqual(shown, true)
 AssertEqual(tab, COLLECTIONS_JOURNAL_TAB_INDEX_PETS)

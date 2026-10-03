@@ -19,6 +19,7 @@ AssertEqual(view.selectionText, "The selected encounter is hidden by the current
 AssertEqual(#view.reasonLines, 2)
 AssertEqual(view.reasonLines[1], "Team is not selected.")
 AssertEqual(view.actionText, "Review the selected encounter.")
+AssertEqual(view.workflowText, "Workflow status is unavailable.")
 
 view = Surface.BuildView({ selectedEncounter = { state = "missing" } })
 AssertEqual(view.selectionText, "The saved encounter is missing. Select an available encounter; BattleBuddy will not substitute another one.")
@@ -37,6 +38,21 @@ AssertEqual(view.reasonLines[1], "Known blocker")
 view = Surface.BuildView({ selectedEncounter = { state = "stale" }, statusMessage = "Catalog update required." })
 AssertEqual(view.selectionText, "The selected encounter is stale. Refresh its evidence before continuing.")
 AssertEqual(view.reasonLines[1], "Catalog update required.")
+
+view = Surface.BuildView({
+    workflow = { requestedState = "paused", teamState = "draft" },
+})
+AssertEqual(view.workflowText, "Workflow reports paused. Team is draft.")
+
+view = Surface.BuildView({
+    workflow = { requestedState = "running", teamState = "bound_battle" },
+})
+AssertEqual(view.workflowText, "Workflow reports running. Team is bound to the current battle.")
+
+view = Surface.BuildView({
+    workflow = { requestedState = "unknown", teamState = "applied" },
+})
+AssertEqual(view.workflowText, "Workflow status is unavailable. Team is applied.")
 
 local shown, tab
 SetCollectionsJournalShown = function(requestedShown, requestedTab)

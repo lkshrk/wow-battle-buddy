@@ -12,6 +12,26 @@ local function CopyReasons(reasons)
     return copied
 end
 
+local function WorkflowText(workflow)
+    if type(workflow) ~= "table" then
+        return "Workflow status is unavailable."
+    end
+
+    local state = workflow.requestedState
+    local stateText = state == "running" and "Workflow reports running."
+        or state == "paused" and "Workflow reports paused."
+        or state == "stopped" and "Workflow reports stopped."
+        or "Workflow status is unavailable."
+    local teamState = workflow.teamState
+    local teamText = teamState == "draft" and " Team is draft."
+        or teamState == "saved" and " Team is saved."
+        or teamState == "selected" and " Team is selected."
+        or teamState == "applied" and " Team is applied."
+        or teamState == "bound_battle" and " Team is bound to the current battle."
+        or ""
+    return stateText .. teamText
+end
+
 function Surface.BuildView(input)
     input = input or {}
 
@@ -39,6 +59,7 @@ function Surface.BuildView(input)
 
     return {
         selectionText = selectionText,
+        workflowText = WorkflowText(input.workflow),
         reasonLines = reasons,
         actionText = type(input.actionText) == "string" and input.actionText
             or "Browse and selection never apply a team or start a battle.",
@@ -51,7 +72,7 @@ local function CreateSurface(petJournal)
     end
 
     local panel = CreateFrame("Frame", nil, petJournal)
-    panel:SetSize(360, 34)
+    panel:SetSize(360, 50)
     panel:SetPoint("BOTTOM", petJournal, "BOTTOM", 0, 2)
     panel:SetFrameLevel(petJournal:GetFrameLevel() + 1)
 
@@ -65,9 +86,15 @@ local function CreateSurface(petJournal)
     selection:SetJustifyH("LEFT")
     selection:SetWordWrap(false)
 
+    local workflow = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    workflow:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -16)
+    workflow:SetPoint("TOPRIGHT", panel, "TOPRIGHT", 0, -16)
+    workflow:SetJustifyH("LEFT")
+    workflow:SetWordWrap(false)
+
     local reasons = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    reasons:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -16)
-    reasons:SetPoint("TOPRIGHT", panel, "TOPRIGHT", 0, -16)
+    reasons:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -32)
+    reasons:SetPoint("TOPRIGHT", panel, "TOPRIGHT", 0, -32)
     reasons:SetJustifyH("LEFT")
     reasons:SetWordWrap(false)
 
@@ -76,6 +103,7 @@ local function CreateSurface(petJournal)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("BattleBuddy")
         GameTooltip:AddLine(view.selectionText, 1, 1, 1, true)
+        GameTooltip:AddLine(view.workflowText, 0.8, 0.8, 0.8, true)
         for _, reason in ipairs(view.reasonLines) do
             GameTooltip:AddLine(reason, 0.8, 0.8, 0.8, true)
         end
@@ -87,6 +115,7 @@ local function CreateSurface(petJournal)
 
     Surface.frame = panel
     Surface.selection = selection
+    Surface.workflow = workflow
     Surface.reasons = reasons
     return panel
 end
@@ -98,6 +127,7 @@ function Surface.Render(input)
 
     local view = Surface.BuildView(input)
     Surface.selection:SetText(view.selectionText)
+    Surface.workflow:SetText(view.workflowText)
     Surface.reasons:SetText(table.concat(view.reasonLines, " · "))
     return true
 end

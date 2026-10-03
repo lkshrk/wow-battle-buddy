@@ -2,13 +2,14 @@ BattleBuddyStore = {}
 
 local Store = BattleBuddyStore
 
-Store.SchemaVersion = 1
+Store.SchemaVersion = 2
 
 local RequiredContainers = {
     "teamsByID",
     "foldersByID",
     "scriptsByID",
     "encounterAssignments",
+    "encounterOverrides",
     "preferredTeamByEncounter",
     "levelingQueue",
     "settingOverrides",
@@ -88,6 +89,7 @@ function Store.New()
         foldersByID = {},
         scriptsByID = {},
         encounterAssignments = {},
+        encounterOverrides = {},
         preferredTeamByEncounter = {},
         levelingQueue = {},
         settingOverrides = {},
@@ -129,6 +131,15 @@ function Store.Initialize(rawStore)
 
     if classification == "current" then
         return Clone(rawStore, {}), classification
+    end
+
+    if classification == "old" and rawStore.schemaVersion == 1 then
+        local upgraded = Clone(rawStore, {})
+        upgraded.schemaVersion = Store.SchemaVersion
+        upgraded.encounterOverrides = {}
+        if IsCurrentStore(upgraded) then
+            return upgraded, "upgraded"
+        end
     end
 
     return nil, classification

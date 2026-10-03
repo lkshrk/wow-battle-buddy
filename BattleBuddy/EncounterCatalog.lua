@@ -51,6 +51,25 @@ local function Record(record)
     return true
 end
 
+local function ValidateOverride(override, record)
+    if type(override) ~= "table" or not Text(override.targetEncounterID)
+        or not PositiveInteger(override.baseRecordRevision) or type(override.content) ~= "table" then
+        return false, "INVALID_RECORD"
+    end
+    if not record then return false, "MISSING_ENCOUNTER" end
+    if record.origin ~= "shipped" or record.recordRevision ~= override.baseRecordRevision then
+        return false, record.origin == "shipped" and "OVERRIDE_BASE_CHANGED" or "INVALID_RECORD"
+    end
+    for field, value in pairs(override.content) do
+        if (field ~= "interactionProfile" and field ~= "healingProfile") or not Text(value) then return false, "INVALID_RECORD" end
+    end
+    return true, Copy(override)
+end
+
+local function ApplyOverride(record, override)
+    for field, value in pairs(override.content) do record.content[field] = value end
+end
+
 function Catalog.BuildView(input)
     input = type(input) == "table" and input or {}
     local view = { state = "ready", catalogRevision = input.catalogRevision, records = {}, recordsByID = {}, diagnostics = {} }
@@ -74,6 +93,26 @@ function Catalog.BuildView(input)
             end
             view.records[#view.records + 1] = Copy(record)
             view.recordsByID[record.encounterID] = Copy(record)
+        end
+    end
+    if input.overrides ~= nil and not Array(input.overrides) then
+        view.diagnostics[#view.diagnostics + 1] = { reason = "INVALID_RECORD" }
+    else
+        for _, override in ipairs(input.overrides or {}) do
+            local targetID = type(override) == "table" and override.targetEncounterID or nil
+            local target = view.recordsByID[targetID]
+            local valid, result = ValidateOverride(override, target)
+            if valid then
+                ApplyOverride(target, result)
+                for _, record in ipairs(view.records) do
+                    if record.encounterID == target.encounterID then ApplyOverride(record, result) end
+                end
+            else
+                view.diagnostics[#view.diagnostics + 1] = {
+                    encounterID = type(override) == "table" and override.targetEncounterID or nil,
+                    reason = result,
+                }
+            end
         end
     end
     if #view.diagnostics > 0 then view.state = "diagnostic" end
@@ -112,19 +151,8 @@ function Catalog.BuildBrowserInput(catalog, selectedEncounterID, filters)
 end
 
 function Catalog.ValidateOverride(override, catalog)
-    if type(override) ~= "table" or not Text(override.targetEncounterID)
-        or not PositiveInteger(override.baseRecordRevision) or type(override.content) ~= "table" then
-        return false, "INVALID_RECORD"
-    end
-    local target = Catalog.GetEncounter(catalog, override.targetEncounterID).encounter
-    if not target then return false, "MISSING_ENCOUNTER" end
-    if target.origin ~= "shipped" or target.recordRevision ~= override.baseRecordRevision then
-        return false, target.origin == "shipped" and "OVERRIDE_BASE_CHANGED" or "INVALID_RECORD"
-    end
-    for field, value in pairs(override.content) do
-        if (field ~= "interactionProfile" and field ~= "healingProfile") or not Text(value) then return false, "INVALID_RECORD" end
-    end
-    return true, Copy(override)
+    local target = Catalog.GetEncounter(catalog, type(override) == "table" and override.targetEncounterID or nil).encounter
+    return ValidateOverride(override, target)
 end
 
 function Catalog.MatchEncounter(catalog, observation, expectedRevision)

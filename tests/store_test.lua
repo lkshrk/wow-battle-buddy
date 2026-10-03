@@ -23,6 +23,7 @@ local source = {
     foldersByID = {},
     scriptsByID = {},
     encounterAssignments = {},
+    encounterOverrides = {},
     preferredTeamByEncounter = {},
     levelingQueue = {},
     settingOverrides = { showHints = false },
@@ -66,3 +67,25 @@ malformed.teamsByID.self = malformed.teamsByID
 invalid, classification = BattleBuddyStore.Initialize(malformed)
 AssertEqual(invalid, nil)
 AssertEqual(classification, "malformed")
+
+local versionOne = {
+    schemaVersion = 1,
+    storeRevision = 7,
+    nextEntitySequence = 12,
+    teamsByID = {},
+    foldersByID = {},
+    scriptsByID = {},
+    encounterAssignments = {},
+    preferredTeamByEncounter = {},
+    levelingQueue = {},
+    settingOverrides = {},
+    transportRecords = {},
+    recoveryRecords = {},
+}
+local upgraded
+upgraded, classification = BattleBuddyStore.Initialize(versionOne)
+AssertEqual(classification, "upgraded")
+AssertEqual(upgraded.schemaVersion, BattleBuddyStore.SchemaVersion)
+AssertEqual(type(upgraded.encounterOverrides), "table")
+AssertEqual(next(upgraded.encounterOverrides), nil)
+AssertEqual(versionOne.encounterOverrides, nil)

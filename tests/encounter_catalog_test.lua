@@ -86,4 +86,17 @@ copiedOverride.content.interactionProfile = "changed"
 Equal(Catalog.ValidateOverride({ targetEncounterID = "shipped.solo", baseRecordRevision = 1, content = { interactionProfile = "safe-profile" } }, catalog), true)
 Equal(Catalog.ValidateOverride({ targetEncounterID = "shipped.solo", baseRecordRevision = 2, content = {} }, catalog), false)
 Equal(select(2, Catalog.ValidateOverride({ targetEncounterID = "shipped.solo", baseRecordRevision = 2, content = {} }, catalog)), "OVERRIDE_BASE_CHANGED")
+local overridden = Catalog.BuildView({
+    schemaVersion = 1,
+    catalogRevision = 4,
+    records = { Record("shipped.solo", 456) },
+    overrides = {
+        { targetEncounterID = "shipped.solo", baseRecordRevision = 1, content = { healingProfile = "safe-profile" } },
+        { targetEncounterID = "shipped.solo", baseRecordRevision = 2, content = { healingProfile = "stale-profile" } },
+    },
+})
+Equal(overridden.state, "diagnostic")
+Equal(Catalog.GetEncounter(overridden, "shipped.solo").encounter.content.healingProfile, "safe-profile")
+Equal(overridden.diagnostics[1].reason, "OVERRIDE_BASE_CHANGED")
+
 Equal(Catalog.BuildView({ schemaVersion = 2, catalogRevision = 1, records = {} }).state, "invalid")

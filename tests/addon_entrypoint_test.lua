@@ -21,6 +21,17 @@ BattleBuddyPetJournalSurface = {
 }
 local loadCalls = 0
 BattleBuddyPersistence = { Load = function() loadCalls = loadCalls + 1 end }
+BattleBuddyDB = { encounterOverrides = { { targetEncounterID = "shipped.example" } } }
+local capturedCatalogInput
+BattleBuddyEncounterContent = { BuildCatalogInput = function() return { schemaVersion = 1, catalogRevision = 1, records = {} } end }
+BattleBuddyEncounterCatalog = {
+    BuildView = function(input)
+        capturedCatalogInput = input
+        return { state = "ready", records = {}, recordsByID = {} }
+    end,
+    BuildBrowserInput = function() return {} end,
+}
+BattleBuddyPetJournalSurface.SetEncounterBrowserInput = function() end
 
 local settingsOpenID
 Settings = {
@@ -35,6 +46,7 @@ SlashCmdList = {}
 dofile(sourceRoot .. "/BattleBuddy/BattleBuddy.lua")
 loadCallback("BattleBuddy")
 AssertEqual(loadCalls, 1)
+AssertEqual(capturedCatalogInput.overrides, BattleBuddyDB.encounterOverrides)
 
 SlashCmdList.BATTLEBUDDY("")
 AssertEqual(openCalls, 1)

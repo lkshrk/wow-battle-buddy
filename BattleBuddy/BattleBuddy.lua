@@ -52,7 +52,9 @@ local function Initialize()
         return
     end
 
-    local catalog = BattleBuddyEncounterCatalog.BuildView(BattleBuddyEncounterContent.BuildCatalogInput())
+    local catalogInput = BattleBuddyEncounterContent.BuildCatalogInput()
+    catalogInput.overrides = BattleBuddyDB and BattleBuddyDB.encounterOverrides
+    local catalog = BattleBuddyEncounterCatalog.BuildView(catalogInput)
     if catalog.state == "invalid" then
         return
     end

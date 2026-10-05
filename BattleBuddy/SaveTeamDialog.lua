@@ -529,8 +529,8 @@ Build = function()
         local button = Button(p, "", 20 + (i - 1) * 26, -166, 23, function()
             Dialog.SetPreference("expectedDD", Dialog.draft.preferences.expectedDD ~= i and i or nil)
         end)
-        button.icon = button:CreateTexture(nil, "ARTWORK"); button.icon:SetAllPoints(button)
-        button.icon:SetTexture("Interface\\Icons\\Pet_Type_" .. family)
+        button.familyIcon = button:CreateTexture(nil, "ARTWORK"); button.familyIcon:SetAllPoints(button)
+        button.familyIcon:SetTexture("Interface\\Icons\\Pet_Type_" .. family)
         button.selected = button:CreateTexture(nil, "BACKGROUND"); button.selected:SetSize(25, 25)
         button.selected:SetPoint("CENTER", button, "CENTER", 0, 0); button.selected:SetColorTexture(1, 0.82, 0)
         f.types[i] = button
@@ -627,7 +627,7 @@ Refresh = function()
     end
     f.allow:SetChecked(draft.preferences.allowMM == true)
     for i, button in ipairs(f.types) do
-        button.icon:SetDesaturated(draft.preferences.expectedDD ~= i)
+        button.familyIcon:SetDesaturated(draft.preferences.expectedDD ~= i)
         button.selected:SetShown(draft.preferences.expectedDD == i)
     end
     for key, edit in pairs(f.wins) do

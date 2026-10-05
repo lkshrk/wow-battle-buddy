@@ -28,6 +28,12 @@ The default Blizzard pet-battle frame shows frontline health percentage, power, 
 
 `battleRound`, `battleStats`, and `battleHealth` default to enabled through `BattleBuddyConfig`. The replica Options controls are not implemented yet; only defaults are added. Changes apply on the next pet-battle event. Presentation never loads teams or dispatches battle actions. `/bb dev on` followed by `/bb dev shots` includes a `battle-stats` view using synthetic data outside battle; it is a layout preview, not a full Blizzard battle-frame replica.
 
+## Enemy abilities
+
+Three enemy ability icons sit above Blizzard’s pet-battle action bar and hide during pet selection or outside battle. Hover opens the native ability tooltip, including duration, hit chance, description and family effectiveness when available. Cooldown numbers use public native cooldown/lockdown state, re-read after rounds and swaps; unavailable values have no number. No combat-message estimates, timers or battle actions are used.
+
+Shift-drag moves the bar; Ctrl-wheel changes its scale by 1%, bounded to 50–200%. Placement and scale persist. Size (42), spacing (6), cooldown font (`Fonts\FRIZQT__.TTF`) and font size (16) use `Config.lua` defaults and setting overrides. The Options tab is currently a placeholder; no new options UI ships. `/bb dev on`, then `/bb dev shots` includes `battle-enemy-abilities`, a stub icon/cooldown preview outside battle. Native tooltips and cooldown continuity still require live 12.1 verification.
+
 ## Reference licenses
 
 Rematch, Akolus, BPBUIT, and PetTracker are ARR/unlicensed: factual own-word specifications only, with no copied code, XML, comments, long text, or assets. Screenshots are reference evidence, not distributable addon artwork. BreedID remains spec-only while its BSD terms are unresolved.

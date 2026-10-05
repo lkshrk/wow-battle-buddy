@@ -19,5 +19,6 @@ EncounterContent.lua
 EncounterBrowser.lua
 PetJournalSurface.lua
 Window.lua
+EnemyAbilities.lua
 Dev.lua
 BattleBuddy.lua

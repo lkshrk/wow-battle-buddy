@@ -16,11 +16,11 @@ The M-1 identity boundary provides the clean BattleBuddy addon and native entry 
 
 The repository also contains encounter, persistence, and workflow modules with Lua tests. The window shell below implements the first part of the R0 replica target; the full replica and PBS integration remain unfinished. Phase A exposes only changed reference options and controls for shipped features, keeping other defaults internal.
 
-`BattleBuddyTeamStrings` provides Rematch team/group/backup codecs, readable exports, and preview-first imports with explicit apply, name-conflict choices, unresolved pets, and PBS script attachments; dialog wiring and live interoperability checks remain pending.
+`BattleBuddyTeamStrings` provides Rematch team/group/backup codecs, readable exports, and preview-first imports with explicit apply, name-conflict choices, unresolved pets, and PBS script attachments; live interoperability checks remain pending.
 
 ## Pet Journal window
 
-BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. The left column lists pets and the middle column displays Blizzard's current three-pet loadout; the right column remains a placeholder. Switching tabs remembers the last view without loading a team. Bottom team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
+BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. The left column lists pets, the middle column displays Blizzard's current three-pet loadout, and the right column lists saved teams. Switching tabs remembers the last view without loading a team. Bottom team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
 
 The loadout updates on journal events, with health, abilities, levels, models, and a target header. Drop a pet from Blizzard's journal onto a slot or click an ability to select an unlocked alternative. Combat, battle, journal/slot locks, and matchmaking refuse edits with a visible reason. Breed text remains blank; leveling markers do not run a queue. The team strip observes `BattleBuddyScript.SetLoadedTeam(store, id)` and indicates script presence without opening an editor. Target Save reports that the Save Team dialog is not available yet. BattleBuddy supplies no teams or fight recommendations.
 
@@ -29,6 +29,10 @@ The loadout updates on journal events, with health, abilities, levels, models, a
 The pet list searches names, abilities and ability text. Combine text with comparisons such as `level=25 health>1400 power>=280 speed=250-300`; the HP, Power and Speed fields accept the same comparisons or inclusive ranges. The level-25 shortcut toggles max-level pets; right-click also requires rare quality. Family, Strong Vs and Tough Vs buttons filter the list. Owned rows support native cursor dragging; filtering never summons or changes the loadout. Breed text stays blank. The full Filter menu and pet-card/menu interactions are pending. `/bb dev shots` includes `window-pets`; live visual parity remains unverified.
 
 `BattleBuddyAlternatives` ranks owned slot replacements with differences and requires confirmation to edit a saved team; menu integration is pending.
+
+### Teams
+
+Search saved teams, pets, groups and targets; **All** collapses or expands groups. Click a team body to load its available pets and saved abilities, with visible missing-pet or lockout reasons. Drag teams onto groups or before/after another team to organize them. Right-click teams/groups for notes, rename, duplicate, favorite, move, export and confirmed deletion. The **Teams** menu offers new groups, preview-then-confirm import (name conflicts become copies), and backup export. Pending editor, target, script, leveling and alternatives surfaces stay disabled with an explanation. No teams or recommendations ship; `/bb dev on` then `/bb dev shots` includes isolated sample rows in the existing `window-teams` view only when the saved store is empty. Refresh never loads pets. Native visual parity and drag behavior still require a retail client check.
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 

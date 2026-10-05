@@ -404,7 +404,19 @@ Frames.AssertAnchor(frame.bottom.saveAs, 1, { "RIGHT", frame.bottom.findBattle, 
 Frames.AssertAnchor(frame.bottom.save, 1, { "RIGHT", frame.bottom.saveAs, "LEFT", -2, 0 })
 AssertEqual(frame.bottom.summon:IsEnabled(), false)
 AssertEqual(frame.bottom.save:IsEnabled(), false)
-AssertEqual(frame.bottom.saveAs:IsEnabled(), false)
+AssertEqual(frame.bottom.saveAs:IsEnabled(), true)
+local opened = {}
+BattleBuddySaveTeamDialog = { Open = function(mode) opened[#opened + 1] = mode; return true end }
+frame.bottom.saveAs:GetScript("OnClick")(frame.bottom.saveAs)
+frame.bottom.save:GetScript("OnClick")(frame.bottom.save)
+AssertEqual(#opened, 2)
+AssertEqual(opened[1], "saveAs")
+AssertEqual(opened[2], "save")
+Window.SetLoadedTeam("team:1")
+AssertEqual(frame.bottom.save:IsEnabled(), true)
+Window.SetLoadedTeam(nil)
+AssertEqual(frame.bottom.save:IsEnabled(), false)
+BattleBuddySaveTeamDialog = nil
 Frames.AssertAnchor(frame.bottom.toggle, 1, { "LEFT", frame.bottom.summon, "RIGHT", 0, 0 })
 AssertEqual(starts, 0)
 AssertEqual(stops, 0)

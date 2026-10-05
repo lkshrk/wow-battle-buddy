@@ -25,7 +25,7 @@ local actions = {
     { "random", "Random Team", nil, "Interface\\Buttons\\UI-GroupLoot-Dice-Up" },
     { "summon", "Summon Pet", nil, "Interface\\Icons\\INV_Misc_Pet_Pandaren_Yeti" },
 }
-local changing, attached, registeredDev
+local changing, attached, registeredDev, loadedTeam
 local hiddenArt = {}
 local heals = {
     revive = { "Revive Battle Pets", "spell", 125439 },
@@ -233,6 +233,17 @@ local function Refresh()
     end
 end
 
+local function OpenSaveDialog(mode)
+    if InCombat() or type(BattleBuddySaveTeamDialog) ~= "table" then return end
+    BattleBuddySaveTeamDialog.Open(mode)
+end
+
+function Window.SetLoadedTeam(teamID)
+    loadedTeam = type(teamID) == "string" and teamID or nil
+    local save = Window.frame and Window.frame.bottom and Window.frame.bottom.save
+    if save then save:SetEnabled(loadedTeam ~= nil) end
+end
+
 function Window.SelectView(name)
     if not labels[name] then return false end
     Window.view = name
@@ -434,14 +445,11 @@ local function CreateWindow()
     bottom.findBattle:SetPoint("RIGHT", bottom, "RIGHT", 0, 0)
     bottom.saveAs = Button(bottom, "Save As", 136)
     bottom.saveAs:SetPoint("RIGHT", bottom.findBattle, "LEFT", -GAP, 0)
-    bottom.saveAs:SetEnabled(false)
     bottom.save = Button(bottom, "Save", 136)
     bottom.save:SetPoint("RIGHT", bottom.saveAs, "LEFT", -GAP, 0)
-    bottom.save:SetEnabled(false)
-    for _, button in ipairs({ bottom.save, bottom.saveAs }) do
-        button:SetDisabledTexture("Interface\\Buttons\\UI-Panel-Button-Up")
-        button:SetDisabledFontObject(GameFontNormal)
-    end
+    bottom.save:SetEnabled(loadedTeam ~= nil)
+    bottom.save:SetScript("OnClick", function() OpenSaveDialog("save") end)
+    bottom.saveAs:SetScript("OnClick", function() OpenSaveDialog("saveAs") end)
     bottom.findBattle:SetScript("OnClick", function()
         if InCombat() or not C_PetBattles then return end
         if Queued() then SafeCall(C_PetBattles.StopPVPMatchmaking)
@@ -524,6 +532,9 @@ local function Attach()
     Window.toggle:SetScript("OnClick", function(self) SetJournalWindow(self:GetChecked()) end)
     hooksecurefunc(PetJournal, "Show", JournalShown)
     hooksecurefunc(PetJournal, "Hide", function() if not changing then Window.Hide() end end)
+    if type(BattleBuddyScript) == "table" and type(BattleBuddyScript.SetLoadedTeam) == "function" then
+        hooksecurefunc(BattleBuddyScript, "SetLoadedTeam", function(_, id) Window.SetLoadedTeam(id) end)
+    end
     hooksecurefunc(PetJournal, "SetShown", function(_, shown)
         if changing then return end
         if shown then JournalShown() else Window.Hide() end

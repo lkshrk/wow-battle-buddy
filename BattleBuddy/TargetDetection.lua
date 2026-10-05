@@ -102,7 +102,7 @@ end
 local function SavedTarget(store, observed)
     if not store or not BattleBuddyTeams then return nil end
     local function Find(texts, partial, phrases)
-        local matches, count, matched = {}, 0
+        local matches, count, matched = {}, 0, nil
         for _, team in pairs(store.teamsByID) do
             for _, key in ipairs(team.targets or {}) do
                 local name = team.targetNames and team.targetNames[key]

@@ -63,7 +63,18 @@ local function ValidID(id, prefix)
 end
 
 local function Target(value)
-    if type(value) == "string" then value = tonumber(value:match("^target:(%d+)$")) end
+    if type(value) == "table" then
+        local key = value.key or value.npcID
+        if key ~= nil then return Target(key) end
+        local name = Trim(value.name)
+        name = name and name:lower():gsub("[%p%s]+$", "")
+        if name and name ~= "" then return "name:" .. name end
+        return nil
+    end
+    if type(value) == "string" then
+        if value:sub(1, 5) == "name:" then return Target({ name = value:sub(6) }) end
+        value = tonumber(value:match("^target:(%d+)$"))
+    end
     if Integer(value, 1) then return value end
 end
 
@@ -109,7 +120,7 @@ end
 
 local TeamFields = {
     teamID = true, name = true, pets = true, tags = true, groupID = true, homeID = true,
-    favorite = true, notes = true, targets = true, preferences = true, winrecord = true, script = true,
+    favorite = true, notes = true, targets = true, targetNames = true, preferences = true, winrecord = true, script = true,
 }
 
 local GroupFields = {
@@ -150,16 +161,34 @@ local function NormalizeTeam(value)
         if not Preferences(team.preferences) then return nil end
         if not next(team.preferences) then team.preferences = nil end
     end
+    local names = {}
+    if team.targetNames ~= nil then
+        if type(team.targetNames) ~= "table" then return nil end
+        for key, name in pairs(team.targetNames) do
+            local id = Target(key)
+            name = Trim(name)
+            if not id or not name or name == "" then return nil end
+            names[id] = name
+        end
+    end
     if team.targets ~= nil then
         if not Array(team.targets) then return nil end
         local targets = {}
         for _, entry in ipairs(team.targets) do
             local id = Target(entry)
             if not id then return nil end
+            if type(entry) == "table" and entry.name ~= nil then
+                local name = Trim(entry.name)
+                if not name or name == "" then return nil end
+                names[id] = name
+            end
+            if type(id) == "string" and not names[id] then names[id] = id:sub(6) end
             if not Contains(targets, id) then targets[#targets + 1] = id end
         end
         team.targets = #targets > 0 and targets or nil
     end
+    for key in pairs(names) do if not Contains(team.targets, key) then names[key] = nil end end
+    team.targetNames = next(names) and names or nil
     if team.winrecord ~= nil then
         if type(team.winrecord) ~= "table" then return nil end
         for key in pairs(team.winrecord) do
@@ -313,7 +342,7 @@ function Teams.Initialize(rawStore)
         names[string.lower(team.name)], store.teamsByID[id] = true, team
     end
     for id, list in pairs(store.targetsByID) do
-        if not Integer(id, 1) or not Array(list) then return nil, "malformed" end
+        if Target(id) ~= id or not Array(list) then return nil, "malformed" end
         for _, teamID in ipairs(list) do if type(teamID) ~= "string" then return nil, "malformed" end end
     end
     Reconcile(store)
@@ -516,14 +545,19 @@ function Teams.DeleteGroup(store, id, confirm, deleteTeams)
 end
 
 function Teams.AttachTarget(store, teamID, targetID, position)
+    if not Plain(targetID) then return nil, "invalid_target_or_team" end
     local team, id = Teams.GetTeam(store, teamID), Target(targetID)
     if not team or not id then return nil, "invalid_target_or_team" end
     local targets = team.targets or {}
-    if not position and Contains(targets, id) then return team end
+    local names = team.targetNames or {}
+    if type(targetID) == "table" and targetID.name ~= nil then names[id] = targetID.name end
+    if not position and Contains(targets, id) then
+        return Teams.EditTeam(store, teamID, { targetNames = names })
+    end
     Remove(targets, id)
     if position ~= nil and (not Integer(position, 1) or position > #targets + 1) then return nil, "invalid_position" end
     table.insert(targets, position or #targets + 1, id)
-    return Teams.EditTeam(store, teamID, { targets = targets })
+    return Teams.EditTeam(store, teamID, { targets = targets, targetNames = names })
 end
 
 function Teams.DetachTarget(store, teamID, targetID)
@@ -535,8 +569,14 @@ function Teams.DetachTarget(store, teamID, targetID)
 end
 
 function Teams.SetTargetTeams(store, targetID, teamIDs)
+    if not Plain(targetID) then return nil, "invalid_target" end
     local id = Target(targetID)
     if not id or not Plain(teamIDs) or not Array(teamIDs) then return nil, "invalid_target" end
+    local name = type(targetID) == "table" and targetID.name or nil
+    if name ~= nil then
+        name = Trim(name)
+        if not name or name == "" then return nil, "invalid_target" end
+    end
     local seen = {}
     for _, teamID in ipairs(teamIDs) do
         if type(teamID) ~= "string" or not store.teamsByID[teamID] or seen[teamID] then return nil, "invalid_team" end
@@ -546,7 +586,17 @@ function Teams.SetTargetTeams(store, targetID, teamIDs)
         local targets = team.targets or {}
         if seen[teamID] then
             if not Contains(targets, id) then table.insert(targets, id) end
-        else Remove(targets, id) end
+            if name or type(id) == "string" then
+                team.targetNames = team.targetNames or {}
+                team.targetNames[id] = name or team.targetNames[id] or id:sub(6)
+            end
+        else
+            Remove(targets, id)
+            if team.targetNames then
+                team.targetNames[id] = nil
+                if not next(team.targetNames) then team.targetNames = nil end
+            end
+        end
         team.targets = #targets > 0 and targets or nil
     end
     store.targetsByID[id] = Copy(teamIDs)

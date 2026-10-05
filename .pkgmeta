@@ -1,0 +1,14 @@
+package-as: BattleBuddy
+
+move-folders:
+  wow-battle-buddy/BattleBuddy: BattleBuddy
+
+ignore:
+  - .github
+  - .luacheckrc
+  - .agent-progress.md
+  - AGENTS.md
+  - docs
+  - scripts
+  - tests
+  - third_party

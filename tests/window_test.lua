@@ -101,11 +101,35 @@ Frames.Create = function(...) return Enhance(originalCreate(...)) end
 CreateFrame = function(kind, name, parent, template)
     local frame = Frames.Create(kind, name, parent, template)
     if template and template:find("CheckButton") then frame.Text = frame:CreateFontString(nil, "OVERLAY") end
+    if kind == "DropdownButton" then
+        function frame:SetupMenu(generator)
+            self:SetScript("OnClick", function() MenuUtil.CreateContextMenu(self, generator) end)
+        end
+    end
     return frame
 end
 UIParent = CreateFrame("Frame", "UIParent")
 CollectionsJournal = CreateFrame("Frame", "CollectionsJournal", UIParent)
 CollectionsJournal:SetFrameLevel(12)
+CollectionsJournal.MountsTab = CreateFrame("Button", "CollectionsJournalTab1", CollectionsJournal)
+CollectionsJournal.MountsTab:SetSize(80, 32)
+PanelTemplates_TabResize = function(tab, _, _, minimum, maximum)
+    AssertEqual(minimum, maximum)
+    tab:SetWidth(minimum)
+end
+PanelTemplates_SelectTab = function(tab) tab.nativeSelected = true end
+PanelTemplates_DeselectTab = function(tab) tab.nativeSelected = false end
+issecretvalue = function() return false end
+canaccessvalue = function() return true end
+dofile(sourceRoot .. "/BattleBuddy/Compatibility.lua")
+GetTime = function() return 25 end
+local menuEntries
+MenuUtil = { CreateContextMenu = function(_, generator)
+    menuEntries = {}
+    generator(nil, { CreateRadio = function(_, label, selected, pick)
+        menuEntries[#menuEntries + 1] = { label = label, selected = selected, pick = pick }
+    end })
+end }
 CollectionsJournal.NineSlice = CreateFrame("Frame", nil, CollectionsJournal)
 CollectionsJournal.BorderFrame = CreateFrame("Frame", nil, CollectionsJournal)
 CollectionsJournal.NineSlice:SetAlpha(0.7)
@@ -211,7 +235,8 @@ Frames.AssertAnchor(frame.toolbar, 1, { "TOPLEFT", frame.canvas, "TOPLEFT", 0, 3
 Frames.AssertAnchor(frame.toolbar, 2, { "BOTTOMRIGHT", frame.canvas, "TOPRIGHT", 0, 2 })
 Frames.AssertAnchor(frame.bottom, 1, { "TOPLEFT", frame.canvas, "BOTTOMLEFT", 0, -2 })
 Frames.AssertAnchor(frame.bottom, 2, { "BOTTOMRIGHT", frame.canvas, "BOTTOMRIGHT", 0, -24 })
-Frames.AssertAnchor(frame.tabs, 1, { "TOPRIGHT", frame, "BOTTOMRIGHT", -8, 2 })
+Frames.AssertAnchor(frame.tabs, 1, { "TOPLEFT", CollectionsJournal.MountsTab, "TOPLEFT", 565, 0 })
+Frames.AssertAnchor(frame.tabs, 2, { "BOTTOMLEFT", CollectionsJournal.MountsTab, "BOTTOMLEFT", 565, 0 })
 Frames.AssertAnchor(frame.pets, 1, { "TOPLEFT", frame.canvas, "TOPLEFT", 0, 0 })
 Frames.AssertAnchor(frame.pets, 2, { "BOTTOMRIGHT", frame.canvas, "BOTTOMLEFT", 280, 0 })
 Frames.AssertAnchor(frame.panel, 1, { "TOPLEFT", frame.canvas, "TOPRIGHT", -280, 0 })
@@ -230,29 +255,71 @@ Frames.AssertText(frame.toolbar.achievement.text, "9876")
 Frames.Fire(frame.toolbar.achievement, "OnClick")
 AssertEqual(achievementClicks, 1)
 local buttons = frame.toolbar.buttons
-AssertEqual(#buttons, 11)
+AssertEqual(#buttons, 10)
 for index, button in ipairs(buttons) do
     Frames.AssertSize(button, 32, 32)
-    if index == 11 then
+    if index == 10 then
         Frames.AssertAnchor(button, 1, { "RIGHT", frame.toolbar, "RIGHT", 0, 0 })
     else
         Frames.AssertAnchor(button, 1, { "RIGHT", buttons[index + 1], "LEFT", 0, 0 })
     end
-    if index <= 7 then AssertEqual(button.template, "SecureActionButtonTemplate") end
-    if index >= 8 then AssertEqual(button:IsEnabled(), false) end
+    if index <= 6 then AssertEqual(button.template, "SecureActionButtonTemplate") end
+    if index >= 7 then AssertEqual(button:IsEnabled(), false) end
 end
 AssertEqual(buttons[1]:GetAttribute("type"), "spell")
 AssertEqual(buttons[1]:GetAttribute("spell"), 125439)
-AssertEqual(buttons[2]:GetAttribute("item"), "item:86143")
-AssertEqual(buttons[3]:GetAttribute("type"), "toy")
-AssertEqual(buttons[3]:GetAttribute("toy"), 92738)
-AssertEqual(buttons[4]:GetAttribute("item"), "item:98112")
-AssertEqual(buttons[5]:GetAttribute("item"), "item:98114")
-AssertEqual(buttons[6]:GetAttribute("item"), "item:116421")
-AssertEqual(buttons[7]:GetAttribute("item"), "item:92677")
-Frames.AssertText(buttons[2].count, "7")
-Frames.AssertText(buttons[4].count, "0")
-AssertEqual(buttons[4].icon.desaturated, true)
+AssertEqual(buttons[2]:GetAttribute("type"), "toy")
+AssertEqual(buttons[2]:GetAttribute("toy"), 92738)
+AssertEqual(buttons[3]:GetAttribute("item"), "item:98112")
+AssertEqual(buttons[4]:GetAttribute("item"), "item:98114")
+AssertEqual(buttons[5]:GetAttribute("item"), "item:116421")
+AssertEqual(buttons[6]:GetAttribute("item"), "item:92677")
+Frames.AssertText(buttons[3].count, "0")
+AssertEqual(buttons[3].icon.desaturated, true)
+AssertEqual(BattleBuddyConfig.GetSetting("healOrder")[1], "revive")
+AssertEqual(frame.toolbar.healArrow.frameType, "DropdownButton")
+AssertEqual(frame.toolbar.healArrow.template, "WowStyle1ArrowDropdownTemplate")
+local readyCooldown = C_Spell.GetSpellCooldown
+C_Spell.GetSpellCooldown = function() return { startTime = 20, duration = 40, isEnabled = true } end
+Frames.Fire(Window.events, "OnEvent", "SPELL_UPDATE_COOLDOWN")
+AssertEqual(buttons[1]:GetAttribute("item"), "item:86143")
+Frames.Fire(frame.toolbar.healArrow, "OnClick")
+AssertEqual(menuEntries[1].label, "Revive Battle Pets — 35s")
+C_Spell.GetSpellCooldown = readyCooldown
+Frames.Fire(Window.events, "OnEvent", "SPELL_UPDATE_COOLDOWN")
+AssertEqual(buttons[1]:GetAttribute("spell"), 125439)
+BattleBuddyConfig.SetSetting("healOrder", { "bandage", "revive" })
+Frames.Fire(Window.events, "OnEvent", "BAG_UPDATE_DELAYED")
+AssertEqual(buttons[1]:GetAttribute("item"), "item:86143")
+counts[86143] = 0
+Frames.Fire(Window.events, "OnEvent", "BAG_UPDATE_DELAYED")
+AssertEqual(buttons[1]:GetAttribute("spell"), 125439)
+counts[86143] = 7
+BattleBuddyConfig.SetSetting("healOrder", { "revive", "bandage" })
+Frames.Fire(frame.toolbar.healArrow, "OnClick")
+AssertEqual(#menuEntries, 2)
+AssertEqual(menuEntries[1].label, "Revive Battle Pets — Ready")
+AssertEqual(menuEntries[2].label, "Battle Pet Bandage (7) — Ready")
+menuEntries[2].pick()
+AssertEqual(buttons[1]:GetAttribute("type"), "item")
+AssertEqual(buttons[1]:GetAttribute("item"), "item:86143")
+AssertEqual(buttons[1]:GetAttribute("spell"), nil)
+Frames.AssertText(buttons[1].count, "7")
+combat = true
+local beforePick = attributes
+menuEntries[1].pick()
+AssertEqual(attributes, beforePick)
+AssertEqual(buttons[1]:GetAttribute("type"), "item")
+combat = false
+Frames.Fire(Window.events, "OnEvent", "PLAYER_REGEN_ENABLED")
+AssertEqual(buttons[1]:GetAttribute("spell"), 125439)
+AssertEqual(buttons[1]:GetAttribute("item"), nil)
+Window.Show()
+BattleBuddyConfig.SetSetting("healOrder", { "bandage", "revive" })
+Frames.Fire(frame.toolbar.healArrow, "OnClick")
+AssertEqual(menuEntries[1].label, "Battle Pet Bandage (7) — Ready")
+AssertEqual(menuEntries[2].selected(), true)
+BattleBuddyConfig.SetSetting("healOrder", { "revive", "bandage" })
 local originalItemCooldown, originalSpellCooldown = C_Item.GetItemCooldown, C_Spell.GetSpellCooldown
 C_Item.GetItemCooldown = function() return 10, 30, 1 end
 C_Spell.GetSpellCooldown = function() return { startTime = 20, duration = 40, isEnabled = true } end
@@ -288,29 +355,30 @@ AssertEqual(buttons[2].cooldown.cooldown, nil)
 C_Item.GetItemCooldown, C_Spell.GetSpellCooldown = originalItemCooldown, originalSpellCooldown
 counts[116421], counts[92677] = 0, 0
 Frames.Fire(Window.events, "OnEvent", "BAG_UPDATE_DELAYED")
-AssertEqual(buttons[6]:GetAttribute("item"), "item:116429")
-AssertEqual(buttons[7]:GetAttribute("item"), "item:98715")
+AssertEqual(buttons[5]:GetAttribute("item"), "item:116429")
+AssertEqual(buttons[6]:GetAttribute("item"), "item:98715")
 counts[116421], counts[92677], counts[116429], counts[98715] = 2, 2, 1, 1
 C_PetJournal.GetSummonedPetGUID = function() return nil end
 Frames.Fire(Window.events, "OnEvent", "PET_JOURNAL_LIST_UPDATE")
-AssertEqual(buttons[6]:GetAttribute("item"), "item:116429")
-AssertEqual(buttons[7]:GetAttribute("item"), "item:98715")
+AssertEqual(buttons[5]:GetAttribute("item"), "item:116429")
+AssertEqual(buttons[6]:GetAttribute("item"), "item:98715")
 for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PET_JOURNAL_LIST_UPDATE", "ACHIEVEMENT_EARNED", "PET_BATTLE_QUEUE_STATUS", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }) do
     AssertEqual(Window.events.events[event], true)
 end
 counts[116429], counts[98715], counts[127755], counts[92741] = 0, 0, 2, 2
 Frames.Fire(Window.events, "OnEvent", "PET_JOURNAL_LIST_UPDATE")
-AssertEqual(buttons[6]:GetAttribute("item"), "item:127755")
-AssertEqual(buttons[7]:GetAttribute("item"), "item:92741")
+AssertEqual(buttons[5]:GetAttribute("item"), "item:127755")
+AssertEqual(buttons[6]:GetAttribute("item"), "item:92741")
 counts[127755], counts[92741] = 0, 0
 Frames.Fire(Window.events, "OnEvent", "BAG_UPDATE_DELAYED")
-AssertEqual(buttons[6]:GetAttribute("item"), "item:116429")
-AssertEqual(buttons[7]:GetAttribute("item"), "item:98715")
+AssertEqual(buttons[5]:GetAttribute("item"), "item:116429")
+AssertEqual(buttons[6]:GetAttribute("item"), "item:98715")
 local stable = { frame.pets, frame.target, frame.team, frame.loadout }
 local names = { "Teams", "Targets", "Queue", "Options" }
 for index, name in ipairs(names) do
     local tab = frame.tabButtons[index]
-    Frames.AssertSize(tab, 68, 32)
+    AssertEqual(tab.template, "PanelTabButtonTemplate")
+    Frames.AssertSize(tab, 64, 32)
     Frames.AssertText(tab, name)
     Frames.AssertAnchor(tab, 1, { "TOPLEFT", frame.tabs, "TOPLEFT", (index - 1) * 64, 0 })
     Frames.Fire(tab, "OnClick")
@@ -318,6 +386,7 @@ for index, name in ipairs(names) do
     AssertEqual(BattleBuddyDB.windowView, name:lower())
     Frames.AssertText(frame.panel.label, name)
     AssertEqual(tab.selected, true)
+    AssertEqual(tab.nativeSelected, true)
     for other, otherTab in ipairs(frame.tabButtons) do AssertEqual(otherTab.selected, other == index) end
 end
 AssertEqual(frame.pets, stable[1])
@@ -326,7 +395,13 @@ AssertEqual(frame.team, stable[3])
 AssertEqual(frame.loadout, stable[4])
 Window.SelectView("invalid")
 AssertEqual(Window.view, "options")
-AssertEqual(frame.bottom.summon:GetWidth(), 160)
+AssertEqual(frame.bottom.summon:GetWidth(), 156)
+AssertEqual(frame.bottom.save:GetWidth(), 136)
+AssertEqual(frame.bottom.saveAs:GetWidth(), 136)
+AssertEqual(frame.bottom.findBattle:GetWidth(), 136)
+Frames.AssertAnchor(frame.bottom.findBattle, 1, { "RIGHT", frame.bottom, "RIGHT", 0, 0 })
+Frames.AssertAnchor(frame.bottom.saveAs, 1, { "RIGHT", frame.bottom.findBattle, "LEFT", -2, 0 })
+Frames.AssertAnchor(frame.bottom.save, 1, { "RIGHT", frame.bottom.saveAs, "LEFT", -2, 0 })
 AssertEqual(frame.bottom.summon:IsEnabled(), false)
 AssertEqual(frame.bottom.save:IsEnabled(), false)
 AssertEqual(frame.bottom.saveAs:IsEnabled(), false)

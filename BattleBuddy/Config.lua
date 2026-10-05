@@ -4,6 +4,7 @@ BattleBuddyConfig = {
     },
     Defaults = {
         journalWindow = true,
+        healOrder = { "revive", "bandage" },
         devTools = false,
         showPetJournalPanel = true,
         showRevisionDetails = false,

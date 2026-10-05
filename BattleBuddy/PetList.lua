@@ -3,7 +3,6 @@ BattleBuddyPetList = {}
 local List = BattleBuddyPetList
 local ROW_HEIGHT, EXPANDED_HEIGHT, COLLAPSED_HEIGHT = 44, 115, 56
 local families = { "Humanoid", "Dragon", "Flying", "Undead", "Critter", "Magical", "Elemental", "Beast", "Water", "Mechanical" }
-local colors = { { 0.62, 0.62, 0.62 }, { 1, 1, 1 }, { 0.12, 1, 0 }, { 0, 0.44, 0.87 } }
 local collection, duplicates, inTeams = {}, {}, {}
 local registeredDev
 List.filters = { families = {}, strong = {}, tough = {} }
@@ -12,8 +11,9 @@ local function InCombat()
     return InCombatLockdown and InCombatLockdown() or false
 end
 
-local function Public(value)
-    return not (issecretvalue and issecretvalue(value))
+local function Restricted(value)
+    local _, state = BattleBuddyCompatibility.PublicValue(value)
+    return state ~= "usable"
 end
 
 local function Label(parent, text, font)
@@ -46,23 +46,25 @@ function List.BindRow(row, pet)
         row.border:SetSize(46, 46)
         row.border:SetPoint("CENTER", row.icon, "CENTER", 0, 0)
         row.border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-        row.level = Label(row, "", "NumberFontNormalSmall")
-        row.level:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 0, -1)
         row.levelBadge = row:CreateTexture(nil, "ARTWORK")
         row.levelBadge:SetSize(18, 16)
-        row.levelBadge:SetPoint("CENTER", row.level, "CENTER", 0, 0)
-        row.levelBadge:SetColorTexture(0.04, 0.04, 0.04, 1)
+        row.levelBadge:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 2, 0)
+        row.levelBadge:SetAtlas("PetJournal-LevelBubble")
+        row.level = Label(row, "", "NumberFontNormalSmall")
+        row.level:SetPoint("CENTER", row.levelBadge, "CENTER", 0, 0)
         row.name = Label(row, "")
         row.name:SetPoint("LEFT", row, "LEFT", 48, 0)
         row.name:SetPoint("RIGHT", row, "RIGHT", -34, 0)
         row.name:SetJustifyH("LEFT")
         row.name:SetWordWrap(false)
-        row.family = row:CreateTexture(nil, "BACKGROUND")
+        row.family = row:CreateTexture(nil, "BORDER")
         row.family:SetSize(42, 42)
         row.family:SetPoint("RIGHT", row, "RIGHT", -1, 0)
         row.family:SetAlpha(0.3)
+        row.family:SetTexCoord(0.4921875, 0.796875, 0.50390625, 0.65625)
         row.breed = Label(row, "")
-        row.breed:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -3, 3)
+        row.breed:SetPoint("BOTTOMRIGHT", row.family, "BOTTOMRIGHT", -2, 0)
+        row.breed:SetJustifyH("RIGHT")
         row.favorite = row:CreateTexture(nil, "OVERLAY")
         row.favorite:SetSize(14, 14)
         row.favorite:SetPoint("TOPLEFT", row.icon, "TOPLEFT", -3, 3)
@@ -96,8 +98,9 @@ function List.BindRow(row, pet)
     row.level:SetText(pet.level and tostring(pet.level) or "")
     row.levelBadge:SetShown(pet.level ~= nil)
     row.name:SetText(pet.name or pet.speciesName or "Unknown pet")
-    local color = pet.owned == true and colors[pet.quality] or nil
-    row.name:SetTextColor(unpack(color or { 0.5, 0.5, 0.5 }))
+    local quality = BattleBuddyCompatibility.PublicValueOfType(pet.quality, "number")
+    local color = pet.owned == true and quality and ColorManager.GetColorDataForItemQuality(quality - 1)
+    row.name:SetTextColor(color and color.r or 0.5, color and color.g or 0.5, color and color.b or 0.5)
     row.family:SetTexture(FamilyTexture(pet.petType))
     row.breed:SetText("")
     row.favorite:SetShown(pet.favorite == true)
@@ -128,7 +131,7 @@ function List.ApplyFilters(retainScrollPosition)
     local ranges = {}
     for key, edit in pairs(frame.ranges) do ranges[key] = edit:GetText() end
     List.query = BattleBuddyPetQuery.Parse(frame.search:GetText(), ranges)
-    List.results = BattleBuddyPetQuery.Filter(collection, List.query, List.filters, issecretvalue)
+    List.results = BattleBuddyPetQuery.Filter(collection, List.query, List.filters, Restricted)
     for key, edit in pairs(frame.ranges) do
         local invalid = List.query.errors[key] ~= nil
         edit:SetTextColor(1, invalid and 0.2 or 1, invalid and 0.2 or 1)
@@ -168,7 +171,8 @@ function List.Refresh()
     end
     for _, team in pairs(BattleBuddyDB and BattleBuddyDB.teamsByID or {}) do
         for _, id in ipairs(team.pets or {}) do
-            if Public(id) and (type(id) == "string" or type(id) == "number") then inTeams[id] = true end
+            id = BattleBuddyCompatibility.PublicValue(id)
+            if type(id) == "string" or type(id) == "number" then inTeams[id] = true end
         end
     end
     List.ApplyFilters(true)
@@ -247,15 +251,19 @@ function List.Mount(parent)
     end
     for index = 1, 10 do
         local button = CreateFrame("Button", nil, frame.familyBar)
-        button:SetSize(25, 25)
+        button:SetSize(26, 26)
         button:SetPoint("TOPLEFT", frame.familyBar, "TOPLEFT", 2 + (index - 1) * 27, -27)
         button.icon = button:CreateTexture(nil, "ARTWORK")
         button.icon:SetAllPoints()
         button.icon:SetTexture(FamilyTexture(index))
+        button.icon:SetTexCoord(0.4921875, 0.796875, 0.50390625, 0.65625)
         button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
         button.selected = button:CreateTexture(nil, "OVERLAY")
-        button.selected:SetAllPoints()
+        button.selected:SetSize(40, 40)
+        button.selected:SetPoint("CENTER", button, "CENTER", 0, 0)
         button.selected:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+        button.selected:SetBlendMode("ADD")
+        button.selected:SetVertexColor(1, 0.82, 0)
         button:SetScript("OnClick", function()
             if InCombat() then return end
             local group = List.filters[frame.category]

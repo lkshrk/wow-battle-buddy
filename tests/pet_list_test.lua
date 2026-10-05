@@ -11,6 +11,7 @@ Frames.Create = function(...)
     function frame:SetTextColor(...) self.textColor = { ... } end
     function frame:SetVertexColor(...) self.vertexColor = { ... } end
     function frame:SetAlpha(alpha) self.alpha = alpha end
+    function frame:SetBlendMode(mode) self.blendMode = mode end
     function frame:SetDesaturated(value) self.desaturated = value end
     function frame:SetTexCoord(...) self.texCoord = { ... } end
     function frame:SetAtlas(atlas) self.atlas = atlas end
@@ -46,6 +47,10 @@ IsShiftKeyDown = function() return false end
 IsAltKeyDown = function() return false end
 issecretvalue = function() return false end
 canaccessvalue = function() return true end
+ColorManager = { GetColorDataForItemQuality = function(quality)
+    eq(quality, 3)
+    return { r = 0.1, g = 0.45, b = 0.9 }
+end }
 C_Timer = { After = function() error("timer forbidden") end, NewTimer = function() error("timer forbidden") end }
 C_PetJournal = {
     PickupPet = function(id) eq(id, "BattlePet-a"); pickups = pickups + 1 end,
@@ -92,6 +97,17 @@ for _, field in ipairs({ "health", "power", "speed" }) do
     eq(frame.ranges[field].frameType, "EditBox")
 end
 eq(#frame.families, 10)
+for index, button in ipairs(frame.families) do
+    Frames.AssertSize(button, 26, 26)
+    Frames.AssertAnchor(button, 1, { "TOPLEFT", frame.familyBar, "TOPLEFT", 2 + (index - 1) * 27, -27 })
+    eq(button.icon.texCoord[1], 0.4921875)
+    eq(button.icon.texCoord[2], 0.796875)
+    eq(button.icon.texCoord[3], 0.50390625)
+    eq(button.icon.texCoord[4], 0.65625)
+    eq(button.icon.alpha, 1)
+    eq(button.selected.blendMode, "ADD")
+    eq(button.selected:IsShown(), false)
+end
 for _, tab in ipairs({ "families", "strong", "tough" }) do assert(frame.tabs[tab]) end
 eq(frame.scrollBox.template, "WowScrollBoxList")
 eq(frame.scrollBar.template, "MinimalScrollBar")
@@ -118,7 +134,19 @@ eq(row.inTeam:IsShown(), true)
 eq(row.summoned:IsShown(), true)
 eq(row.icon.texture, 123)
 Frames.AssertSize(row.icon, 40, 40)
-Frames.AssertAnchor(row.level, 1, { "BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 0, -1 })
+Frames.AssertAnchor(row.levelBadge, 1, { "BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 2, 0 })
+eq(row.levelBadge.atlas, "PetJournal-LevelBubble")
+Frames.AssertAnchor(row.level, 1, { "CENTER", row.levelBadge, "CENTER", 0, 0 })
+Frames.AssertAnchor(row.family, 1, { "RIGHT", row, "RIGHT", -1, 0 })
+eq(row.family.layer, "BORDER")
+eq(row.family.texCoord[1], 0.4921875)
+eq(row.family.texCoord[4], 0.65625)
+Frames.AssertAnchor(row.favorite, 1, { "TOPLEFT", row.icon, "TOPLEFT", -3, 3 })
+Frames.AssertAnchor(row.breed, 1, { "BOTTOMRIGHT", row.family, "BOTTOMRIGHT", -2, 0 })
+eq(row.breed.justifyH, "RIGHT")
+eq(row.name.textColor[1], 0.1)
+eq(row.name.textColor[2], 0.45)
+eq(row.name.textColor[3], 0.9)
 eq(row.name.wordWrap, false)
 local rareColor = row.name.textColor
 Frames.Fire(row, "OnDragStart", "LeftButton")
@@ -126,6 +154,9 @@ eq(pickups, 1)
 eq(applies, 0)
 eq(summons, 0)
 List.BindRow(row, List.results[3])
+eq(row.name.textColor[1], 0.5)
+eq(row.name.textColor[2], 0.5)
+eq(row.name.textColor[3], 0.5)
 eq(row.favorite:IsShown(), false)
 eq(row.inTeam:IsShown(), false)
 eq(row.duplicate:IsShown(), false)
@@ -163,6 +194,9 @@ Frames.Fire(frame.level25, "OnClick", "RightButton")
 eq(#List.results, 3)
 Frames.Fire(frame.families[2], "OnClick", "LeftButton")
 eq(#List.results, 2)
+eq(frame.families[2].selected:IsShown(), true)
+eq(frame.families[2].icon.alpha, 1)
+eq(frame.families[1].icon.alpha, 0.3)
 Frames.Fire(frame.families[2], "OnClick", "LeftButton")
 eq(#List.results, 3)
 Frames.Fire(frame.expand, "OnClick", "LeftButton")
@@ -230,6 +264,16 @@ local function noUpdates(object)
     for _, child in ipairs(object.children) do noUpdates(child) end
 end
 noUpdates(UIParent)
+local publicValue = BattleBuddyCompatibility.PublicValue
+BattleBuddyCompatibility.PublicValue = function(value)
+    if value == "Azure" then return nil, "restricted" end
+    return publicValue(value)
+end
+List.filters = { families = {}, strong = {}, tough = {} }
+frame.search:SetText("azure")
+Frames.Fire(frame.search, "OnTextChanged", true)
+eq(#List.results, 0)
+BattleBuddyCompatibility.PublicValue = publicValue
 BattleBuddyDev = nil
 dofile(root .. "/BattleBuddy/PetList.lua")
 local lateView

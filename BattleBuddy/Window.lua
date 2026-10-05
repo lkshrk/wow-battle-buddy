@@ -15,7 +15,6 @@ local stones = {
 }
 local actions = {
     { "heal", "Heal", "spell", 125439 },
-    { "bandage", "Bandage", "item", 86143 },
     { "hat", "Safari Hat", "toy", 92738 },
     { "lesserTreat", "Lesser Pet Treat", "item", 98112 },
     { "treat", "Pet Treat", "item", 98114 },
@@ -28,19 +27,25 @@ local actions = {
 }
 local changing, attached, registeredDev
 local hiddenArt = {}
+local heals = {
+    revive = { "Revive Battle Pets", "spell", 125439 },
+    bandage = { "Battle Pet Bandage", "item", 86143 },
+}
+local selectedHeal, pendingHeal, preferredHeal
+local Public = BattleBuddyCompatibility.PublicValue
+local Field = BattleBuddyCompatibility.ReadField
 
 local function InCombat()
-    return InCombatLockdown and InCombatLockdown() or false
+    return not InCombatLockdown or Public(InCombatLockdown()) ~= false
 end
 
 local function SafeCall(callback, ...)
     if type(callback) ~= "function" then return end
-    local result = { pcall(callback, ...) }
+    local function Pack(...) return { n = select("#", ...), ... } end
+    local result = Pack(pcall(callback, ...))
     if not result[1] then return end
-    for _, value in pairs(result) do
-        if issecretvalue and issecretvalue(value) then return end
-    end
-    return unpack(result, 2)
+    for index = 2, result.n do result[index] = Public(result[index]) end
+    return unpack(result, 2, result.n)
 end
 
 local function Text(parent, text, font)
@@ -122,6 +127,50 @@ local function Queued()
     return state == "queued" or state == "proposal" or state == "suspended"
 end
 
+local function HealOrder()
+    return BattleBuddyConfig.GetSetting("healOrder")
+end
+
+local function HealStatus(key)
+    local action = heals[key]
+    local count = action[2] == "item" and ItemCount(action[3]) or nil
+    local start, duration, enabled
+    if action[2] == "spell" then
+        local cooldown = SafeCall(C_Spell and C_Spell.GetSpellCooldown, action[3])
+        start, duration, enabled = Field(cooldown, "startTime"), Field(cooldown, "duration"), Field(cooldown, "isEnabled")
+    else
+        start, duration, enabled = SafeCall(C_Item and C_Item.GetItemCooldown, action[3])
+    end
+    local now = SafeCall(GetTime)
+    local remaining
+    if type(start) == "number" and type(duration) == "number" and type(now) == "number" then
+        remaining = math.max(0, start + duration - now)
+    end
+    local available = (not count or count > 0) and remaining == 0 and (enabled == true or enabled == 1)
+    local status = remaining and remaining > 0 and (math.ceil(remaining) .. "s")
+        or (available and "Ready" or "Unavailable")
+    return available, action[1] .. (count and (" (" .. count .. ")") or "") .. " — " .. status
+end
+
+local function ChooseHeal()
+    local first, ready
+    for _, key in ipairs(HealOrder()) do
+        if heals[key] then
+            first = first or key
+            if HealStatus(key) then ready = ready or key end
+        end
+    end
+    if pendingHeal then
+        preferredHeal, pendingHeal = pendingHeal, nil
+    end
+    if preferredHeal then
+        selectedHeal = preferredHeal
+    else
+        selectedHeal = ready or first
+    end
+    return selectedHeal and heals[selectedHeal]
+end
+
 local function Refresh()
     local frame = Window.frame
     if not frame then return end
@@ -135,7 +184,22 @@ local function Refresh()
         local kind = action[3]
         if kind then
             local id = button.actionID or action[4]
-            if not InCombat() then
+            if action[1] == "heal" then
+                if not InCombat() then
+                    local heal = ChooseHeal()
+                    if heal then
+                        kind, id = heal[2], heal[3]
+                        button:SetAttribute("spell", nil)
+                        button:SetAttribute("item", nil)
+                        button:SetAttribute("type", kind)
+                        button:SetAttribute(kind, kind == "item" and ("item:" .. id) or id)
+                        button.actionID, button.actionKind = id, kind
+                        Tooltip(button, heal[1])
+                    end
+                end
+                kind = button.actionKind or kind
+            end
+            if not InCombat() and action[1] ~= "heal" then
                 id = Stone(action[1], action[4])
                 button.actionID = id
                 button:SetAttribute("type", kind)
@@ -146,7 +210,7 @@ local function Refresh()
                 icon = SafeCall(C_Spell and C_Spell.GetSpellTexture, id)
                 local cooldown = SafeCall(C_Spell and C_Spell.GetSpellCooldown, id)
                 if type(cooldown) == "table" then
-                    start, duration, enabled = cooldown.startTime, cooldown.duration, cooldown.isEnabled
+                    start, duration, enabled = Field(cooldown, "startTime"), Field(cooldown, "duration"), Field(cooldown, "isEnabled")
                 end
             else
                 icon = SafeCall(C_Item and C_Item.GetItemIconByID, id)
@@ -161,9 +225,8 @@ local function Refresh()
             button.count:SetText(count and tostring(count) or "")
             button.icon:SetDesaturated(count == 0)
             button.cooldown:Clear()
-            if not (issecretvalue and (issecretvalue(start) or issecretvalue(duration) or issecretvalue(enabled)))
-                and type(start) == "number" and type(duration) == "number" and duration > 0
-                and enabled ~= false and enabled ~= 0 then
+            if type(start) == "number" and type(duration) == "number" and duration > 0
+                and (enabled == true or enabled == 1) then
                 button.cooldown:SetCooldown(start, duration)
             end
         end
@@ -178,8 +241,8 @@ function Window.SelectView(name)
         Window.frame.panel.label:SetText(labels[name])
         for index, button in ipairs(Window.frame.tabButtons) do
             button.selected = views[index] == name
-            button:SetNormalTexture(button.selected and "Interface\\Buttons\\UI-Panel-Button-Down"
-                or "Interface\\Buttons\\UI-Panel-Button-Up")
+            if button.selected then PanelTemplates_SelectTab(button)
+            else PanelTemplates_DeselectTab(button) end
         end
     end
     return true
@@ -320,12 +383,26 @@ local function CreateWindow()
             Tooltip(button, "Available in a later BattleBuddy slice")
         end
     end
+    toolbar.healArrow = CreateFrame("DropdownButton", nil, toolbar, "WowStyle1ArrowDropdownTemplate")
+    toolbar.healArrow:SetSize(25, 25)
+    toolbar.healArrow:SetPoint("RIGHT", toolbar.buttons[1], "LEFT", 0, 0)
+    toolbar.healArrow:SetupMenu(function(_, root)
+        for _, key in ipairs(HealOrder()) do
+            if heals[key] then
+                local _, label = HealStatus(key)
+                root:CreateRadio(label, function() return selectedHeal == key end, function()
+                    pendingHeal = key
+                    if not InCombat() then Refresh() end
+                end)
+            end
+        end
+    end)
     toolbar.total = Button(toolbar, "Total Pets", 120)
     toolbar.total:SetPoint("LEFT", toolbar, "LEFT", 56, 0)
     toolbar.achievement = CreateFrame("Button", nil, toolbar)
     toolbar.achievement:SetHeight(32)
     toolbar.achievement:SetPoint("LEFT", toolbar.total, "RIGHT", 8, 0)
-    toolbar.achievement:SetPoint("RIGHT", toolbar.buttons[1], "LEFT", -4, 0)
+    toolbar.achievement:SetPoint("RIGHT", toolbar.healArrow, "LEFT", -4, 0)
     toolbar.achievement.text = Text(toolbar.achievement, "", "GameFontNormalLarge")
     for _, side in ipairs({ -1, 1 }) do
         local flair = toolbar.achievement:CreateTexture(nil, "BACKGROUND")
@@ -347,20 +424,24 @@ local function CreateWindow()
     bottom:SetHeight(BOTTOM_HEIGHT)
     bottom:SetPoint("TOPLEFT", canvas, "BOTTOMLEFT", 0, -GAP)
     bottom:SetPoint("BOTTOMRIGHT", canvas, "BOTTOMRIGHT", 0, -(BOTTOM_HEIGHT + GAP))
-    bottom.summon = Button(bottom, "Summon", 160)
+    bottom.summon = Button(bottom, "Summon", 156)
     bottom.summon:SetPoint("LEFT", bottom, "LEFT", 0, 0)
     bottom.summon:SetEnabled(false)
     bottom.toggle = Checkbox(bottom)
     bottom.toggle:SetPoint("LEFT", bottom.summon, "RIGHT", 0, 0)
     bottom.toggle:SetScript("OnClick", function(self) SetJournalWindow(self:GetChecked()) end)
-    bottom.findBattle = Button(bottom, "Find Battle", 140)
+    bottom.findBattle = Button(bottom, "Find Battle", 136)
     bottom.findBattle:SetPoint("RIGHT", bottom, "RIGHT", 0, 0)
-    bottom.saveAs = Button(bottom, "Save As", 140)
+    bottom.saveAs = Button(bottom, "Save As", 136)
     bottom.saveAs:SetPoint("RIGHT", bottom.findBattle, "LEFT", -GAP, 0)
     bottom.saveAs:SetEnabled(false)
-    bottom.save = Button(bottom, "Save", 140)
+    bottom.save = Button(bottom, "Save", 136)
     bottom.save:SetPoint("RIGHT", bottom.saveAs, "LEFT", -GAP, 0)
     bottom.save:SetEnabled(false)
+    for _, button in ipairs({ bottom.save, bottom.saveAs }) do
+        button:SetDisabledTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+        button:SetDisabledFontObject(GameFontNormal)
+    end
     bottom.findBattle:SetScript("OnClick", function()
         if InCombat() or not C_PetBattles then return end
         if Queued() then SafeCall(C_PetBattles.StopPVPMatchmaking)
@@ -368,12 +449,16 @@ local function CreateWindow()
         Refresh()
     end)
     frame.tabs = CreateFrame("Frame", nil, frame)
-    frame.tabs:SetSize(260, 32)
-    frame.tabs:SetPoint("TOPRIGHT", frame, "BOTTOMRIGHT", -8, 2)
+    frame.tabs:SetWidth(256)
+    frame.tabs.minTabWidth, frame.tabs.maxTabWidth = 64, 64
+    frame.tabs:SetPoint("TOPLEFT", CollectionsJournal.MountsTab, "TOPLEFT", 565, 0)
+    frame.tabs:SetPoint("BOTTOMLEFT", CollectionsJournal.MountsTab, "BOTTOMLEFT", 565, 0)
     frame.tabButtons = {}
     for index, name in ipairs(views) do
-        local tab = Button(frame.tabs, labels[name], 68)
-        tab:SetSize(68, 32)
+        local tab = CreateFrame("Button", nil, frame.tabs, "PanelTabButtonTemplate")
+        tab:SetText(labels[name])
+        tab:SetHeight(32)
+        PanelTemplates_TabResize(tab, nil, nil, 64, 64)
         tab:SetPoint("TOPLEFT", frame.tabs, "TOPLEFT", (index - 1) * 64, 0)
         tab:SetScript("OnClick", function() Window.SelectView(name) end)
         frame.tabButtons[index] = tab

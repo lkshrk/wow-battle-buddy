@@ -28,7 +28,7 @@ local combat, battle, journalLocked, queued = false, false, false, false
 local sets, choices, clears = 0, 0, 0
 local current = { { "BattlePet-1", 101, 102, 103, false },
     { "BattlePet-2", 101, 102, 103, false }, { nil, nil, nil, nil, false } }
-local health, petName, species = 50, "My Pet", 1
+local health, petName, species, petIcon = 50, "My Pet", 1, 132199
 local cursor, cursorPet, targetName
 InCombatLockdown = function() return combat end
 C_PetBattles = { IsInBattle = function() return battle end,
@@ -37,7 +37,7 @@ C_PetJournal = {
     GetPetLoadOutInfo = function(slot) return unpack(current[slot], 1, 5) end,
     GetPetInfoByPetID = function(id)
         if not id:match("^BattlePet%-%d+$") then return end
-        return species, petName, 12, 20, 100, 200, false, "Species", 300, 8, 400, nil, nil, nil, true
+        return species, petName, 12, 20, 100, 200, false, "Species", petIcon, 8, 400, "Source", "Description", false, true, true, false
     end,
     GetPetStats = function() return health, 100, 20, 30, 3 end,
     GetPetAbilityList = function() return { 101, 102, 103, 104, 105, 106 }, { 1, 2, 4, 10, 15, 20 } end,
@@ -87,6 +87,13 @@ for i, slot in ipairs(slots) do
     Frames.AssertAnchor(slot, 1, { "TOPLEFT", host.loadout, "TOPLEFT", 0, -(i - 1) * 139 })
     Frames.AssertSize(slot.pet, 46, 46)
     Frames.AssertAnchor(slot.pet, 1, { "TOPLEFT", slot, "TOPLEFT", 15, -18 })
+    Equal(slot.icon:GetParent(), slot.pet)
+    Equal(slot.icon.layer, "ARTWORK")
+    Frames.AssertSize(slot.icon, 42, 42)
+    Frames.AssertAnchor(slot.icon, 1, { "CENTER", slot.pet, "CENTER", 0, 0 })
+    Equal(slot.border.layer, "OVERLAY")
+    Equal(slot.border.texture, "Interface\\Common\\WhiteIconFrame")
+    Frames.AssertSize(slot.border, 46, 46)
     Frames.AssertSize(slot.model, 88, 100)
     Frames.AssertAnchor(slot.model, 1, { "BOTTOMRIGHT", slot, "BOTTOMRIGHT", -1, 1 })
     Frames.AssertSize(slot.family, 77, 77)
@@ -101,6 +108,18 @@ Frames.AssertText(slots[1].name, "My Pet")
 Frames.AssertText(slots[1].healthText, "50%")
 Frames.AssertText(slots[1].level, "12")
 Equal(slots[1].model.display, 200)
+Equal(slots[1].icon.texture, 132199)
+Equal(slots[2].icon.texture, 132199)
+Equal(slots[3].icon.texture, nil)
+petName = nil
+L.Refresh()
+Frames.AssertText(slots[1].name, "Species")
+Equal(slots[1].icon.texture, 132199)
+petIcon = secret
+L.Refresh()
+Equal(slots[1].icon.texture, nil)
+petName, petIcon = "My Pet", 132199
+L.Refresh()
 Equal(slots[1].abilities[1].icon.texture, 1101)
 Frames.AssertText(slots[3].name, "Empty slot")
 Frames.AssertShown(slots[3].model, false)

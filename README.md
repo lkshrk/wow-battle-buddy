@@ -18,7 +18,9 @@ The repository also contains encounter, persistence, and workflow modules with L
 
 ## Pet Journal window
 
-BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. Columns are placeholders; switching tabs remembers the last view without loading a team. Team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
+BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. The left column lists pets; the other columns remain placeholders. Switching tabs remembers the last view without loading a team. Team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
+
+The pet list searches names, abilities and ability text. Combine text with comparisons such as `level=25 health>1400 power>=280 speed=250-300`; the HP, Power and Speed fields accept the same comparisons or inclusive ranges. The level-25 shortcut toggles max-level pets; right-click also requires rare quality. Family, Strong Vs and Tough Vs buttons filter the list. Owned rows support native cursor dragging; filtering never summons or changes the loadout. Breed text stays blank. The full Filter menu and pet-card/menu interactions are pending. `/bb dev shots` includes `window-pets`; live visual parity remains unverified.
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 

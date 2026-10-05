@@ -274,6 +274,7 @@ local function CreateWindow()
     end
     frame.pets:SetPoint("TOPLEFT", canvas, "TOPLEFT", 0, 0)
     frame.pets:SetPoint("BOTTOMRIGHT", canvas, "BOTTOMLEFT", COLUMN_WIDTH, 0)
+    if BattleBuddyPetList then BattleBuddyPetList.Mount(frame.pets) end
     frame.panel:SetPoint("TOPLEFT", canvas, "TOPRIGHT", -COLUMN_WIDTH, 0)
     frame.panel:SetPoint("BOTTOMRIGHT", canvas, "BOTTOMRIGHT", 0, 0)
     frame.target:SetPoint("TOPLEFT", frame.pets, "TOPRIGHT", GAP, 0)

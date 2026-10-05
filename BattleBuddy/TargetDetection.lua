@@ -1,7 +1,7 @@
 BattleBuddyTargetDetection = {}
 
 local Detection = BattleBuddyTargetDetection
-local Public = BattleBuddyCompatibility.PublicValue
+local Public = BattleBuddyCompatibility.PublicValueOfType
 local catalog, frame
 local gossipOpen = false
 local current = { state = "unresolved", candidateIDs = {} }

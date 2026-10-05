@@ -2,7 +2,7 @@ BattleBuddyCompatibility = {}
 
 local Compatibility = BattleBuddyCompatibility
 
-function Compatibility.PublicValue(value, expectedType)
+function Compatibility.PublicValueOfType(value, expectedType)
     local ok, public = pcall(Compatibility.ClassifyValue, value)
     if ok and type(public) == expectedType then return public end
 end

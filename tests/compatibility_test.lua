@@ -39,12 +39,12 @@ AssertEqual(state, "usable")
 
 issecretvalue = function(candidate) return candidate == "secret" end
 canaccessvalue = function(candidate) return candidate ~= "restricted" end
-AssertEqual(BattleBuddyCompatibility.PublicValue("secret", "string"), nil)
-AssertEqual(BattleBuddyCompatibility.PublicValue("restricted", "string"), nil)
-AssertEqual(BattleBuddyCompatibility.PublicValue({}, "string"), nil)
-AssertEqual(BattleBuddyCompatibility.PublicValue("public", "string"), "public")
+AssertEqual(BattleBuddyCompatibility.PublicValueOfType("secret", "string"), nil)
+AssertEqual(BattleBuddyCompatibility.PublicValueOfType("restricted", "string"), nil)
+AssertEqual(BattleBuddyCompatibility.PublicValueOfType({}, "string"), nil)
+AssertEqual(BattleBuddyCompatibility.PublicValueOfType("public", "string"), "public")
 issecretvalue = nil
-AssertEqual(BattleBuddyCompatibility.PublicValue("public", "string"), nil)
+AssertEqual(BattleBuddyCompatibility.PublicValueOfType("public", "string"), nil)
 
 value, state = Classify(false, false, true)
 AssertEqual(value, false)

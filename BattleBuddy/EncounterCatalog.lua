@@ -4,7 +4,7 @@ local Catalog = BattleBuddyEncounterCatalog
 Catalog.SchemaVersion = 1
 
 local function Public(value, kind)
-    return BattleBuddyCompatibility and BattleBuddyCompatibility.PublicValue(value, kind)
+    return BattleBuddyCompatibility and BattleBuddyCompatibility.PublicValueOfType(value, kind)
 end
 
 local function Text(value)

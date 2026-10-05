@@ -3,6 +3,10 @@ BattleBuddyEncounterCatalog = {}
 local Catalog = BattleBuddyEncounterCatalog
 Catalog.SchemaVersion = 1
 
+local function Public(value, kind)
+    return BattleBuddyCompatibility and BattleBuddyCompatibility.PublicValue(value, kind)
+end
+
 local function Text(value)
     return type(value) == "string" and value ~= ""
 end
@@ -26,9 +30,16 @@ local function Copy(value)
     return copy
 end
 
+local function OptionalArray(value, valid)
+    if value == nil then return true end
+    if not Array(value) then return false end
+    for _, item in ipairs(value) do if not valid(item) then return false end end
+    return true
+end
+
 local function SelectorsOverlap(left, right)
     if left.npcID ~= right.npcID then return false end
-    for _, field in ipairs({ "activityID", "contextKey" }) do
+    for _, field in ipairs({ "activityID", "contextKey", "questID" }) do
         if left[field] and right[field] and left[field] ~= right[field] then return false end
     end
     return true
@@ -43,10 +54,17 @@ local function Record(record)
         or not Array(record.selectors) or #record.selectors == 0 then return false end
     local prefix = record.origin == "shipped" and "shipped." or "custom."
     if record.encounterID:sub(1, #prefix) ~= prefix then return false end
+    if not OptionalArray(record.display.aliases, Text) or not OptionalArray(record.content.gossipHints, Text)
+        or (record.display.locale ~= nil and not Text(record.display.locale))
+        or (record.content.questID ~= nil and not PositiveInteger(record.content.questID))
+        or not OptionalArray(record.content.enemyPets, function(pet)
+            return type(pet) == "table" and (pet.speciesID == nil or PositiveInteger(pet.speciesID))
+        end) then return false end
     for _, selector in ipairs(record.selectors) do
         if type(selector) ~= "table" or not PositiveInteger(selector.npcID)
             or (selector.activityID ~= nil and not Text(selector.activityID))
-            or (selector.contextKey ~= nil and not Text(selector.contextKey)) then return false end
+            or (selector.contextKey ~= nil and not Text(selector.contextKey))
+            or (selector.questID ~= nil and not PositiveInteger(selector.questID)) then return false end
     end
     return true
 end
@@ -167,15 +185,25 @@ end
 
 function Catalog.MatchEncounter(catalog, observation, expectedRevision)
     if type(catalog) ~= "table" or catalog.state == "invalid" then return { state = "unresolved", candidateIDs = {}, reason = "INVALID_CATALOG" } end
+    expectedRevision = Public(expectedRevision, "number")
     if expectedRevision and expectedRevision ~= catalog.catalogRevision then return { state = "stale", candidateIDs = {}, reason = "STALE_CATALOG" } end
-    if type(observation) ~= "table" or not PositiveInteger(observation.npcID) then return { state = "unresolved", candidateIDs = {}, reason = "INSUFFICIENT_CONTEXT" } end
+    observation = Public(observation, "table") or {}
+    observation = { npcID = Public(observation.npcID, "number"), activityID = Public(observation.activityID, "string"),
+        contextKey = Public(observation.contextKey, "string"), questID = Public(observation.questID, "number") }
+    if not PositiveInteger(observation.npcID) then return { state = "unresolved", candidateIDs = {}, reason = "INSUFFICIENT_CONTEXT" } end
     local candidates, complete = {}, {}
     for _, record in ipairs(catalog.records) do
         for _, selector in ipairs(record.selectors) do
-            local matches = selector.npcID == observation.npcID and (not Text(observation.activityID) or not selector.activityID or selector.activityID == observation.activityID) and (not Text(observation.contextKey) or not selector.contextKey or selector.contextKey == observation.contextKey)
+            local matches, completed = selector.npcID == observation.npcID, true
+            for _, field in ipairs({ "activityID", "contextKey", "questID" }) do
+                if selector[field] then
+                    if observation[field] and selector[field] ~= observation[field] then matches = false end
+                    if selector[field] ~= observation[field] then completed = false end
+                end
+            end
             if matches then
                 candidates[record.encounterID] = true
-                if (not selector.activityID or selector.activityID == observation.activityID) and (not selector.contextKey or selector.contextKey == observation.contextKey) then complete[record.encounterID] = true end
+                if completed then complete[record.encounterID] = true end
             end
         end
     end
@@ -186,4 +214,118 @@ function Catalog.MatchEncounter(catalog, observation, expectedRevision)
     if #ids > 1 then return { state = "ambiguous", candidateIDs = ids, reason = "AMBIGUOUS_MATCH" } end
     if complete[ids[1]] then return { state = "unique", candidateIDs = ids, encounterID = ids[1], reason = "MATCHED" } end
     return { state = "unresolved", candidateIDs = ids, reason = "INSUFFICIENT_CONTEXT" }
+end
+
+local function Normalize(value)
+    value = Public(value, "string")
+    return value and value:lower():match("^%s*(.-)%s*$"):gsub("[%p%s]+$", "") or ""
+end
+
+local function Names(record)
+    local names = { record.display.fallbackLabel }
+    for _, alias in ipairs(record.display.aliases or {}) do names[#names + 1] = alias end
+    return names
+end
+
+local function HasPhrase(text, phrase)
+    if phrase == "" then return false end
+    local from = 1
+    while true do
+        local first, last = text:find(phrase, from, true)
+        if not first then return false end
+        if (first == 1 or not text:sub(first - 1, first - 1):match("[%w_]"))
+            and (last == #text or not text:sub(last + 1, last + 1):match("[%w_]")) then return true end
+        from = last + 1
+    end
+end
+
+function Catalog.Lookup(catalog, observation, expectedRevision)
+    if type(catalog) ~= "table" or catalog.state == "invalid" then
+        return { state = "unresolved", candidateIDs = {}, reason = "INVALID_CATALOG" }
+    end
+    observation = Public(observation, "table") or {}
+    expectedRevision = Public(expectedRevision, "number")
+    if expectedRevision and expectedRevision ~= catalog.catalogRevision then
+        return { state = "stale", candidateIDs = {}, reason = "STALE_CATALOG" }
+    end
+    local function Finish(result)
+        if result.state == "unique" then
+            result.encounter = Copy(catalog.recordsByID[result.encounterID])
+            result.npcID = result.encounter.selectors[1].npcID
+        end
+        return result
+    end
+    local npcID = Public(observation.npcID, "number")
+    if PositiveInteger(npcID) then return Finish(Catalog.MatchEncounter(catalog, observation, expectedRevision)) end
+    local questID = Public(observation.questID, "number")
+    if not PositiveInteger(questID) then questID = nil end
+    local function QuestMatches(record)
+        if not questID or record.content.questID == questID then return true end
+        for _, selector in ipairs(record.selectors) do
+            if selector.questID == questID then return true end
+        end
+        return false
+    end
+    local function Find(predicate)
+        local ids = {}
+        for _, record in ipairs(catalog.records or {}) do
+            if QuestMatches(record) and predicate(record) then ids[#ids + 1] = record.encounterID end
+        end
+        table.sort(ids)
+        if #ids > 1 then return { state = "ambiguous", candidateIDs = ids, reason = "AMBIGUOUS_MATCH" } end
+        if #ids == 1 then return Finish({ state = "unique", candidateIDs = ids, encounterID = ids[1], reason = "MATCHED" }) end
+    end
+    local speciesID = Public(observation.speciesID, "number")
+    local result
+    if PositiveInteger(speciesID) then
+        result = Find(function(record)
+            for _, pet in ipairs(record.content.enemyPets or {}) do
+                if pet.speciesID == speciesID then return true end
+            end
+        end)
+        if result then return result end
+    end
+    local locale = Public(observation.locale, "string") or "enUS"
+    local function Localized(record) return (record.display.locale or "enUS") == locale end
+    local name, prefix = Normalize(observation.name), Normalize(observation.prefix)
+    for _, partial in ipairs({ false, true }) do
+        local wanted = partial and prefix or name
+        if wanted ~= "" then
+            result = Find(function(record)
+                if not Localized(record) then return false end
+                for _, candidate in ipairs(Names(record)) do
+                    candidate = Normalize(candidate)
+                    if candidate == wanted or (partial and candidate:sub(1, #wanted) == wanted) then return true end
+                end
+            end)
+            if result then return result end
+        end
+    end
+    for _, field in ipairs({ "gossipTexts", "publicTexts", "scenarioTexts" }) do
+        local texts = Public(observation[field], "table") or {}
+        result = Find(function(record)
+            if not Localized(record) then return false end
+            local phrases = Names(record)
+            for _, hint in ipairs(record.content.gossipHints or {}) do phrases[#phrases + 1] = hint end
+            for _, raw in ipairs(texts) do
+                local text = Normalize(raw)
+                for _, phrase in ipairs(phrases) do
+                    if HasPhrase(text, Normalize(phrase)) then return true end
+                end
+                raw = Public(raw, "string")
+                if field == "publicTexts" and raw and (raw:match("%.%.%.%s*$") or raw:match("…%s*$")) then
+                    local truncated = Normalize(raw:gsub("…%s*$", ""))
+                    for _, candidate in ipairs(Names(record)) do
+                        if truncated ~= "" and Normalize(candidate):sub(1, #truncated) == truncated then return true end
+                    end
+                end
+            end
+        end)
+        if result then return result end
+    end
+    if questID then
+        result = Find(function() return true end)
+        if result then return result end
+    end
+    return { state = "unresolved", candidateIDs = {}, reason = "MISSING_ENCOUNTER" }
 end

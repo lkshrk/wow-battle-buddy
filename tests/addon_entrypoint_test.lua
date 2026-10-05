@@ -32,6 +32,8 @@ BattleBuddyEncounterCatalog = {
     BuildBrowserInput = function() return {} end,
 }
 BattleBuddyPetJournalSurface.SetEncounterBrowserInput = function() end
+local detectionCatalog
+BattleBuddyTargetDetection = { Start = function(catalog) detectionCatalog = catalog end }
 
 local settingsOpenID
 local registeredSettings = {}
@@ -54,6 +56,7 @@ dofile(sourceRoot .. "/BattleBuddy/BattleBuddy.lua")
 loadCallback("BattleBuddy")
 AssertEqual(loadCalls, 1)
 AssertEqual(capturedCatalogInput.overrides, BattleBuddyDB.encounterOverrides)
+AssertEqual(detectionCatalog, BattleBuddyEncounterCatalog.Current)
 AssertEqual(#registeredSettings, 2)
 AssertEqual(registeredSettings[1].key, "showPetJournalPanel")
 AssertEqual(registeredSettings[2].key, "showRevisionDetails")

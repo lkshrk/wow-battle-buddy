@@ -5,7 +5,8 @@ local Persistence = BattleBuddyPersistence
 Persistence.Status = "uninitialized"
 
 function Persistence.Initialize(rawStore)
-    local store, classification = BattleBuddyStore.Initialize(rawStore)
+    local model = BattleBuddyTeams or BattleBuddyStore
+    local store, classification = model.Initialize(rawStore)
     if not store then
         Persistence.Status = classification
         return nil, classification

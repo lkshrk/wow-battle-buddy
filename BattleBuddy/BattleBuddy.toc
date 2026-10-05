@@ -11,6 +11,7 @@ Compatibility.lua
 Evidence.lua
 Store.lua
 Persistence.lua
+Teams.lua
 WorkflowState.lua
 EncounterCatalog.lua
 EncounterContent.lua

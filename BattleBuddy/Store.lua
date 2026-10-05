@@ -2,7 +2,7 @@ BattleBuddyStore = {}
 
 local Store = BattleBuddyStore
 
-Store.SchemaVersion = 2
+Store.SchemaVersion = 3
 
 local RequiredContainers = {
     "teamsByID",
@@ -15,6 +15,9 @@ local RequiredContainers = {
     "settingOverrides",
     "transportRecords",
     "recoveryRecords",
+    "groupsByID",
+    "groupOrder",
+    "targetsByID",
 }
 
 local function IsNonNegativeInteger(value)
@@ -37,7 +40,8 @@ local function IsPlainData(value, seen)
 
     seen[value] = true
     for key, item in pairs(value) do
-        if (type(key) ~= "string" and type(key) ~= "number") or not IsPlainData(item, seen) then
+        if (type(key) ~= "string" and type(key) ~= "number")
+            or not IsPlainData(key, seen) or not IsPlainData(item, seen) then
             seen[value] = nil
             return false
         end
@@ -59,12 +63,12 @@ local function Clone(value, copies)
     return copy
 end
 
-local function IsCurrentStore(store)
+local function IsValidStore(store, version)
     if type(store) ~= "table" or getmetatable(store) ~= nil then
         return false
     end
 
-    if store.schemaVersion ~= Store.SchemaVersion
+    if store.schemaVersion ~= version
         or not IsNonNegativeInteger(store.storeRevision)
         or not IsNonNegativeInteger(store.nextEntitySequence)
         or store.nextEntitySequence < 1 then
@@ -72,7 +76,9 @@ local function IsCurrentStore(store)
     end
 
     for _, field in ipairs(RequiredContainers) do
-        if type(store[field]) ~= "table" then
+        local introduced = field == "encounterOverrides" and 2
+            or (field == "groupsByID" or field == "groupOrder" or field == "targetsByID") and 3 or 1
+        if version >= introduced and type(store[field]) ~= "table" then
             return false
         end
     end
@@ -86,6 +92,26 @@ function Store.New()
         storeRevision = 0,
         nextEntitySequence = 1,
         teamsByID = {},
+        groupsByID = {
+            ["group:favorites"] = {
+                groupID = "group:favorites",
+                name = "Favorite Teams",
+                icon = "Interface\\Icons\\ACHIEVEMENT_GUILDPERK_MRPOPULARITY_RANK2",
+                meta = true,
+                sortMode = "alpha",
+                teams = {},
+            },
+            ["group:none"] = {
+                groupID = "group:none",
+                name = "Ungrouped Teams",
+                icon = "Interface\\Icons\\INV_Pet_BattlePetTraining",
+                meta = true,
+                sortMode = "alpha",
+                teams = {},
+            },
+        },
+        groupOrder = { "group:favorites", "group:none" },
+        targetsByID = {},
         foldersByID = {},
         scriptsByID = {},
         encounterAssignments = {},
@@ -103,7 +129,7 @@ function Store.Classify(rawStore)
         return "fresh"
     end
 
-    if type(rawStore) ~= "table" or type(rawStore.schemaVersion) ~= "number"
+    if type(rawStore) ~= "table" or getmetatable(rawStore) ~= nil or type(rawStore.schemaVersion) ~= "number"
         or rawStore.schemaVersion % 1 ~= 0 or rawStore.schemaVersion < 0 then
         return "malformed"
     end
@@ -116,7 +142,7 @@ function Store.Classify(rawStore)
         return "newer"
     end
 
-    if not IsCurrentStore(rawStore) then
+    if not IsValidStore(rawStore, Store.SchemaVersion) then
         return "malformed"
     end
 
@@ -133,13 +159,22 @@ function Store.Initialize(rawStore)
         return Clone(rawStore, {}), classification
     end
 
-    if classification == "old" and rawStore.schemaVersion == 1 then
+    if classification == "old" and (rawStore.schemaVersion == 1 or rawStore.schemaVersion == 2) then
+        if not IsValidStore(rawStore, rawStore.schemaVersion) then
+            return nil, "malformed"
+        end
         local upgraded = Clone(rawStore, {})
         upgraded.schemaVersion = Store.SchemaVersion
-        upgraded.encounterOverrides = {}
-        if IsCurrentStore(upgraded) then
+        local defaults = Store.New()
+        for _, field in ipairs({ "encounterOverrides", "groupsByID", "groupOrder", "targetsByID" }) do
+            if upgraded[field] == nil then
+                upgraded[field] = defaults[field]
+            end
+        end
+        if IsValidStore(upgraded, Store.SchemaVersion) then
             return upgraded, "upgraded"
         end
+        return nil, "malformed"
     end
 
     return nil, classification

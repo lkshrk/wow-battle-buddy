@@ -3,6 +3,8 @@ BattleBuddyConfig = {
         LevelingCompletionLevel = 25,
     },
     Defaults = {
+        journalWindow = true,
+        devTools = false,
         showPetJournalPanel = true,
         showRevisionDetails = false,
     },

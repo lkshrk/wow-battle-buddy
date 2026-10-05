@@ -16,4 +16,6 @@ EncounterCatalog.lua
 EncounterContent.lua
 EncounterBrowser.lua
 PetJournalSurface.lua
+Window.lua
+Dev.lua
 BattleBuddy.lua

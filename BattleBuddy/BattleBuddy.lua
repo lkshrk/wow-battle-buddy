@@ -51,6 +51,8 @@ local function RegisterSettings()
             end
         elseif command == "help" then
             PrintHelp()
+        elseif (command == "dev" or command:match("^dev%s")) and type(BattleBuddyDev) == "table" then
+            BattleBuddyDev.HandleCommand(command:match("^dev%s*(.-)%s*$"))
         elseif not OpenPetJournal() and not OpenSettings(category) then
             print("|cffff0000BattleBuddy|r — The Pet Journal and settings are unavailable.")
         end

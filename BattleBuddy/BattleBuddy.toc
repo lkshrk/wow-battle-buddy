@@ -16,6 +16,7 @@ Teams.lua
 WorkflowState.lua
 EncounterCatalog.lua
 EncounterContent.lua
+TargetDetection.lua
 EncounterBrowser.lua
 PetJournalSurface.lua
 Window.lua

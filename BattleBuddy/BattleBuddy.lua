@@ -75,6 +75,7 @@ local function Initialize()
     end
 
     BattleBuddyEncounterCatalog.Current = catalog
+    BattleBuddyTargetDetection.Start(catalog)
     BattleBuddyPetJournalSurface.SetEncounterBrowserInput(BattleBuddyEncounterCatalog.BuildBrowserInput(catalog))
 end
 

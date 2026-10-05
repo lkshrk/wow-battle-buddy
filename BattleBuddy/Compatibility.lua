@@ -2,6 +2,11 @@ BattleBuddyCompatibility = {}
 
 local Compatibility = BattleBuddyCompatibility
 
+function Compatibility.PublicValue(value, expectedType)
+    local ok, public = pcall(Compatibility.ClassifyValue, value)
+    if ok and type(public) == expectedType then return public end
+end
+
 function Compatibility.ClassifyValue(value, inspectors)
     inspectors = inspectors or {}
     local isSecret = inspectors.isSecret or issecretvalue

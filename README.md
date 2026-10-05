@@ -22,6 +22,12 @@ BattleBuddy replaces the Pet Journal panel inside Collections with a three-colum
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 
+## Battle statistics
+
+The default Blizzard pet-battle frame shows frontline health percentage, power, and speed below both health bars. Native current/max health stays inside each bar. The Vs-circle indicator shows `?`: available evidence does not establish an absolute current round, and BattleBuddy never derives one from playback or PBS counters. Secret/unavailable percentages are hidden; unknown power and speed show `?`. Native health text retains Blizzard's display path.
+
+`battleRound`, `battleStats`, and `battleHealth` default to enabled through `BattleBuddyConfig`. The replica Options controls are not implemented yet; only defaults are added. Changes apply on the next pet-battle event. Presentation never loads teams or dispatches battle actions. `/bb dev on` followed by `/bb dev shots` includes a `battle-stats` view using synthetic data outside battle; it is a layout preview, not a full Blizzard battle-frame replica.
+
 ## Reference licenses
 
 Rematch, Akolus, BPBUIT, and PetTracker are ARR/unlicensed: factual own-word specifications only, with no copied code, XML, comments, long text, or assets. Screenshots are reference evidence, not distributable addon artwork. BreedID remains spec-only while its BSD terms are unresolved.

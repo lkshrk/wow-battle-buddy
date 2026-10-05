@@ -8,6 +8,7 @@
 
 Config.lua
 Compatibility.lua
+BattleStats.lua
 Evidence.lua
 Store.lua
 Persistence.lua

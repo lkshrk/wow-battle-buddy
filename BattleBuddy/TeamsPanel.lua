@@ -124,7 +124,7 @@ function P.Load(teamID)
     BattleBuddyScript.SetLoadedTeam(store, teamID)
     loadedStore, loadedID = store, teamID
     if type(P.afterLoad) == "function" then
-        local ok, reason = P.afterLoad(teamID)
+        local ok, reason = P.afterLoad()
         if not ok then
             BattleBuddyScript.SetLoadedTeam(nil, nil)
             loadedStore, loadedID = nil, nil

@@ -25,6 +25,8 @@ EncounterBrowser.lua
 PetJournalSurface.lua
 Window.lua
 Loadout.lua
+PetQuery.lua
+PetList.lua
 EnemyAbilities.lua
 Dev.lua
 BattlePanel.lua

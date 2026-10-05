@@ -1,7 +1,7 @@
 package-as: BattleBuddy
 
 move-folders:
-  wow-battle-buddy/BattleBuddy: BattleBuddy
+  BattleBuddy/BattleBuddy: BattleBuddy
 
 ignore:
   - .github

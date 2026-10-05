@@ -18,6 +18,11 @@ BattleBuddyConfig = {
         enemyAbilityMoved = false,
         enemyAbilityX = 0,
         enemyAbilityY = 0,
+        battlePanelScale = 100,
+        battlePanelMoved = false,
+        battlePanelX = 0,
+        battlePanelY = 0,
+        battleAutobattleKey = "A",
     },
 }
 

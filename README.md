@@ -34,6 +34,14 @@ Three enemy ability icons sit above Blizzard’s pet-battle action bar and hide 
 
 Shift-drag moves the bar; Ctrl-wheel changes its scale by 1%, bounded to 50–200%. Placement and scale persist. Size (42), spacing (6), cooldown font (`Fonts\FRIZQT__.TTF`) and font size (16) use `Config.lua` defaults and setting overrides. The Options tab is currently a placeholder; no new options UI ships. `/bb dev on`, then `/bb dev shots` includes `battle-enemy-abilities`, a stub icon/cooldown preview outside battle. Native tooltips and cooldown continuity still require live 12.1 verification.
 
+## Battle panel
+
+The compact dark battle panel keeps Blizzard’s ability, swap, trap, Pass and single-confirmation Forfeit controls. Autobattle advances the loaded team’s script once per click or fresh key press; its default battle-only key is **A**. Hold repeats never advance it. Missing scripts and reloads during battle disable Autobattle with a visible reason; manual controls remain available, and script execution resumes at the next battle start.
+
+Use **+** to capture a keyboard binding (Escape cancels), or right-click **+** to clear it. Blizzard’s Key Bindings also lists Autobattle, Pass and three swap bindings. Captured keys override their normal actions only during battle; binding changes wait out combat lockdown. Shift-drag moves the panel; Ctrl-wheel scales it by 1%, within 50–200%, with placement and scale saved. XP, PvP time and effectiveness hints use readable public facts; unknown numbers remain blank. Battle Data shows a small current-facts view. `/bb dev on`, then `/bb dev shots`, includes the `battle-panel` stub preview.
+
+The dark panel has no supplied reference capture. Native secure delegation, PvP timing and visual parity still need live 12.1 checks.
+
 ## Reference licenses
 
 The engine in `BattleBuddy/Script/` ports PBS v1.13.1 under its MIT notice; share codecs use local implementations with no bundled library dependencies.

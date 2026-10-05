@@ -1,1 +1,9 @@
-<Bindings/>
+<Bindings>
+    <Binding name="BATTLEBUDDY_AUTOBATTLE" header="BATTLEBUDDY" runOnUp="true">
+        BattleBuddyBattlePanel.Binding(keystate)
+    </Binding>
+    <Binding name="CLICK BattleBuddyPass:LeftButton" header="BATTLEBUDDY"/>
+    <Binding name="CLICK BattleBuddySwap1:LeftButton" header="BATTLEBUDDY"/>
+    <Binding name="CLICK BattleBuddySwap2:LeftButton" header="BATTLEBUDDY"/>
+    <Binding name="CLICK BattleBuddySwap3:LeftButton" header="BATTLEBUDDY"/>
+</Bindings>

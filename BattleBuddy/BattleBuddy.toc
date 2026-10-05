@@ -26,4 +26,5 @@ PetJournalSurface.lua
 Window.lua
 EnemyAbilities.lua
 Dev.lua
+BattlePanel.lua
 BattleBuddy.lua

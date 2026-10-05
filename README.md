@@ -22,6 +22,12 @@ BattleBuddy replaces the Pet Journal panel inside Collections with a three-colum
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 
+## Enemy abilities
+
+Three enemy ability icons sit above Blizzard’s pet-battle action bar and hide during pet selection or outside battle. Hover opens the native ability tooltip, including duration, hit chance, description and family effectiveness when available. Cooldown numbers use public native cooldown/lockdown state, re-read after rounds and swaps; unavailable values have no number. No combat-message estimates, timers or battle actions are used.
+
+Shift-drag moves the bar; Ctrl-wheel changes its scale by 1%, bounded to 50–200%. Placement and scale persist. Size (42), spacing (6), cooldown font (`Fonts\FRIZQT__.TTF`) and font size (16) use `Config.lua` defaults and setting overrides. The Options tab is currently a placeholder; no new options UI ships. `/bb dev on`, then `/bb dev shots` includes `battle-enemy-abilities`, a stub icon/cooldown preview outside battle. Native tooltips and cooldown continuity still require live 12.1 verification.
+
 ## Reference licenses
 
 Rematch, Akolus, BPBUIT, and PetTracker are ARR/unlicensed: factual own-word specifications only, with no copied code, XML, comments, long text, or assets. Screenshots are reference evidence, not distributable addon artwork. BreedID remains spec-only while its BSD terms are unresolved.

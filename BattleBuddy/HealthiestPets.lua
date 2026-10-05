@@ -130,11 +130,4 @@ function H.Apply()
     return true
 end
 
-local load = BattleBuddyTeamsPanel.Load
-function BattleBuddyTeamsPanel.Load(...)
-    local ok, reason = load(...)
-    if not ok then return ok, reason end
-    ok, reason = H.Apply()
-    if not ok then BattleBuddyScript.SetLoadedTeam(nil, nil) end
-    return ok, reason
-end
+BattleBuddyTeamsPanel.afterLoad = function() return H.Apply() end

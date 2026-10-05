@@ -33,7 +33,13 @@ BattleBuddyLoadout = {
 }
 local unloaded
 BattleBuddyScript = { SetLoadedTeam = function(store, id) unloaded = store == nil and id == nil end }
-BattleBuddyTeamsPanel = { Load = function() return originalSuccess, "original reason" end }
+BattleBuddyTeamsPanel = {}
+BattleBuddyTeamsPanel.Load = function()
+    if not originalSuccess then return false, "original reason" end
+    local ok, reason = BattleBuddyTeamsPanel.afterLoad()
+    if not ok then BattleBuddyScript.SetLoadedTeam(nil, nil) end
+    return ok, reason
+end
 local eventHandler
 CreateFrame = function()
     return { RegisterEvent = function() end, SetScript = function(_, _, callback) eventHandler = callback end }

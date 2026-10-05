@@ -32,6 +32,10 @@ The pet list searches names, abilities and ability text. Combine text with compa
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 
+## Save Team dialog
+
+`BattleBuddySaveTeamDialog.Open("save" | "saveAs", {teamID = id, store = store, onSaved = callback})` opens an isolated draft. An explicit `teamID` edits/copies that team's pets; otherwise the current loadout and target prefill the draft, and Save uses the observed loaded team. Team, Targets, Preferences, and Wins support Reset, immediate Cancel/close/Escape discard, and collision Overwrite/New Copy. `Save()` returns the saved ID; the callback receives it after interactive confirmation. Saving never loads pets. Script text is preserved opaquely; its editor and bottom-bar wiring remain separate work. `/bb dev on`, then `/bb dev save-team-dialog` opens disposable sample data.
+
 ## Battle statistics
 
 The default Blizzard pet-battle frame shows frontline health percentage, power, and speed below both health bars. Native current/max health stays inside each bar. The Vs-circle indicator shows `?`: available evidence does not establish an absolute current round, and BattleBuddy never derives one from playback or PBS counters. Secret/unavailable percentages are hidden; unknown power and speed show `?`. Native health text retains Blizzard's display path.

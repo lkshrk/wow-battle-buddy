@@ -171,6 +171,12 @@ function Dev.HandleCommand(command)
         Dev.Next()
     elseif command == "stop" then
         Dev.Stop()
+    elseif names[command] then
+        if not Dev.IsEnabled() then print(OFF_MESSAGE); return end
+        if InCombatLockdown() then print("BattleBuddy dev tools: cannot show views in combat."); return end
+        for _, view in ipairs(views) do
+            if view.name == command then view.show(); return end
+        end
     else
         print("BattleBuddy dev: on, off, views, shots, next, stop.")
     end

@@ -30,6 +30,7 @@ Loadout.lua
 PetQuery.lua
 PetList.lua
 EnemyAbilities.lua
+SaveTeamDialog.lua
 Dev.lua
 BattlePanel.lua
 BattleBuddy.lua

@@ -29,10 +29,12 @@ Window.lua
 Loadout.lua
 TeamMenus.lua
 TeamsPanel.lua
+HealthiestPets.lua
 PetQuery.lua
 PetList.lua
 EnemyAbilities.lua
 SaveTeamDialog.lua
 Dev.lua
+AutoLoad.lua
 BattlePanel.lua
 BattleBuddy.lua

@@ -2,7 +2,7 @@ BattleBuddyTargetDetection = {}
 
 local Detection = BattleBuddyTargetDetection
 local Public = BattleBuddyCompatibility.PublicValueOfType
-local catalog, frame, targetStore, latestObservation, latestSource
+local catalog, frame, targetStore, latestObservation, latestSource, latestNameplate
 local gossipOpen = false
 local current = { state = "unresolved", candidateIDs = {} }
 local recent = {}
@@ -145,8 +145,8 @@ local function SavedTarget(store, observed)
     end
 end
 
-local function Resolve(store)
-    local observation = latestObservation
+local function Resolve(store, observation, source)
+    if not source then observation, source = latestObservation, latestSource end
     local result
     if observation then
         if not observation.npcID then result = SavedTarget(store, observation) end
@@ -166,7 +166,7 @@ local function Resolve(store)
         if not result.name and result.encounter then result.name = result.encounter.display.fallbackLabel end
     end
     result = result or { state = "unresolved", candidateIDs = {} }
-    result.source = latestSource or "target"
+    result.source = source or "target"
     return result
 end
 
@@ -174,7 +174,7 @@ function Detection.Refresh(unit, nameplate)
     unit = Public(unit, "string") or "target"
     nameplate = Public(nameplate, "string")
     if nameplate and Public(Read(UnitIsUnit, nameplate, unit), "boolean") ~= true then nameplate = nil end
-    latestObservation, latestSource = Observe(unit, nameplate), unit
+    latestObservation, latestSource, latestNameplate = Observe(unit, nameplate), unit, nameplate
     current = Resolve(targetStore or BattleBuddyDB)
     if current.state == "unique" and current.npcID then
         for index = #recent, 1, -1 do
@@ -191,18 +191,34 @@ function Detection.Current()
     return Detection.GetCurrent()
 end
 
-function Detection.TeamsForCurrent(store)
-    store = store or targetStore or BattleBuddyDB
+local function AssociatedTeams(store, target, observation)
     if not store then return {} end
-    local target = Resolve(store)
     local teams = BattleBuddyTeams.ListByTarget(store, target.key)
-    if #teams == 0 and target.npcID then
-        local saved = SavedTarget(store, latestObservation)
+    if #teams == 0 and target.npcID and observation then
+        local saved = SavedTarget(store, observation)
         if saved and type(saved.key) == "string" then
             return BattleBuddyTeams.ListByTarget(store, saved.key)
         end
     end
     return teams
+end
+
+function Detection.TeamsForCurrent(store)
+    store = store or targetStore or BattleBuddyDB
+    return AssociatedTeams(store, Resolve(store), latestObservation)
+end
+
+function Detection.ForUnit(unit, store)
+    unit = Public(unit, "string")
+    if not unit or Public(Read(UnitExists, unit), "boolean") == false then
+        return { state = "unresolved" }, {}
+    end
+    store = store or targetStore or BattleBuddyDB
+    local nameplate = latestNameplate
+    if not nameplate or Public(Read(UnitIsUnit, nameplate, unit), "boolean") ~= true then nameplate = nil end
+    local observation = Observe(unit, nameplate)
+    local result = Resolve(store, observation, unit)
+    return result, AssociatedTeams(store, result, observation)
 end
 
 function Detection.GetRecent()
@@ -248,6 +264,7 @@ function Detection.Start(view, store)
                 end
                 Detection.Refresh(source)
             end
+            if BattleBuddyAutoLoad then BattleBuddyAutoLoad.OnObservation() end
         end)
     end
     return Detection.GetCurrent()

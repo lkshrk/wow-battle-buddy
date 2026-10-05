@@ -123,6 +123,15 @@ function P.Load(teamID)
     end
     BattleBuddyScript.SetLoadedTeam(store, teamID)
     loadedStore, loadedID = store, teamID
+    if type(P.afterLoad) == "function" then
+        local ok, reason = P.afterLoad()
+        if not ok then
+            BattleBuddyScript.SetLoadedTeam(nil, nil)
+            loadedStore, loadedID = nil, nil
+            P.Refresh()
+            return Report(reason)
+        end
+    end
     P.Refresh()
     if #missing > 0 then Report("Missing pets: " .. table.concat(missing, ", ")) else Report(nil) end
     return true

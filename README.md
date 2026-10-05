@@ -16,6 +16,8 @@ The M-1 identity boundary provides the clean BattleBuddy addon and native entry 
 
 The repository also contains encounter, persistence, and workflow modules with Lua tests. The window shell below implements the first part of the R0 replica target; the full replica and PBS integration remain unfinished. Phase A exposes only changed reference options and controls for shipped features, keeping other defaults internal.
 
+`BattleBuddyTeamStrings` provides Rematch team/group/backup codecs, readable exports, and preview-first imports with explicit apply, name-conflict choices, unresolved pets, and PBS script attachments; dialog wiring and live interoperability checks remain pending.
+
 ## Pet Journal window
 
 BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. Columns are placeholders; switching tabs remembers the last view without loading a team. Team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.

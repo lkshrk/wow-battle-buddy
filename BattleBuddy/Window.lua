@@ -467,6 +467,7 @@ local function CreateWindow()
     Window.SelectView(labels[saved] and saved or "teams")
     frame:SetScript("OnShow", Refresh)
     if BattleBuddyLoadout then BattleBuddyLoadout.Mount(frame) end
+    if BattleBuddyTeamsPanel then BattleBuddyTeamsPanel.Mount(frame.panel) end
 end
 
 function Window.Show()
@@ -504,6 +505,7 @@ local function RegisterDevViews()
             SetCollectionsJournalShown(true, COLLECTIONS_JOURNAL_TAB_INDEX_PETS)
             if not Window.Show() then return false end
             Window.SelectView(name)
+            if name == "teams" and BattleBuddyTeamsPanel then BattleBuddyTeamsPanel.SetPreview(true) end
             return true
         end, function()
             if not InCombat() and HideUIPanel and CollectionsJournal then HideUIPanel(CollectionsJournal) end

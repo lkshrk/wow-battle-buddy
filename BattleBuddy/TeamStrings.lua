@@ -265,7 +265,8 @@ end
 
 local function Decode(text)
     assert(type(text) == "string" and #text <= 1024 * 1024 and not text:find("%z"), "Invalid input or size limit")
-    local originalText, script, shareVersion = text
+    local originalText = text
+    local script, shareVersion
     if text:match("^%s*#") then
         shareVersion = tonumber(text:match("# Version: (%d+)"))
         if not shareVersion and text:find("(Script)", 1, true) then shareVersion = 1 end

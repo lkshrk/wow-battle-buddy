@@ -13,6 +13,7 @@ Evidence.lua
 Store.lua
 Persistence.lua
 Teams.lua
+Alternatives.lua
 Script/Parser.lua
 Script/Evaluate.lua
 Script/Share.lua

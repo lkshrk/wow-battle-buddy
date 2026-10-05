@@ -18,6 +18,8 @@ The repository also contains encounter, persistence, and workflow modules with L
 
 ## Pet Journal window
 
+`BattleBuddyAlternatives` ranks owned slot replacements with differences and requires confirmation to edit a saved team; menu integration is pending.
+
 BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. Columns are placeholders; switching tabs remembers the last view without loading a team. Team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.

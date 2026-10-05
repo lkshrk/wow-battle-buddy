@@ -409,7 +409,8 @@ end
 function P.SelectView(name)
     if not P.frame or Combat() then return end
     P.frame:SetShown(name == "teams")
-    P.frame:GetParent().label:SetShown(name ~= "teams")
+    local placeholder = P.frame:GetParent()["label"]
+    if placeholder then placeholder:SetShown(name ~= "teams") end
     if name == "teams" then P.Refresh() else P.preview, drag = nil, nil end
 end
 

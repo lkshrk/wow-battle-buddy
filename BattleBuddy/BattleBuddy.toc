@@ -24,6 +24,7 @@ TargetDetection.lua
 EncounterBrowser.lua
 PetJournalSurface.lua
 Window.lua
+Loadout.lua
 EnemyAbilities.lua
 Dev.lua
 BattlePanel.lua

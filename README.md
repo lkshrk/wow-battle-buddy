@@ -18,7 +18,11 @@ The repository also contains encounter, persistence, and workflow modules with L
 
 ## Pet Journal window
 
-BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. Columns are placeholders; switching tabs remembers the last view without loading a team. Team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
+BattleBuddy replaces the Pet Journal panel inside Collections with a three-column window, utility toolbar, bottom actions, and Teams, Targets, Queue, and Options tabs. The middle column displays Blizzard's current three-pet loadout; the other columns remain placeholders. Switching tabs remembers the last view without loading a team. Bottom team actions and Summon remain disabled. The toolbar offers pet-care items and Revive Battle Pets; Find Battle starts matchmaking or leaves the queue.
+
+The loadout updates on journal events, with health, abilities, levels, models, and a target header. Drop a pet from Blizzard's journal onto a slot or click an ability to select an unlocked alternative. Combat, battle, journal/slot locks, and matchmaking refuse edits with a visible reason. Breed text remains blank; leveling markers do not run a queue. The team strip observes `BattleBuddyScript.SetLoadedTeam(store, id)` and indicates script presence without opening an editor. Target Save reports that the Save Team dialog is not available yet. BattleBuddy supplies no teams or fight recommendations.
+
+`BattleBuddyLoadout.DropPet(slot, petID)` is the pet-list integration entry point; `SetTarget({ name, npcID, icon, enemies = { { icon, level } } })` supplies observed target facts without loading pets. `/bb dev window-loadout` (after `/bb dev on`) and `/bb dev shots` include this live-loadout view. Flyouts close on selection, a second click, journal refresh, or window hide; there is no polling or timed dismissal. Visual parity and actual client drag/model behavior still need a retail 12.1 check.
 
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 

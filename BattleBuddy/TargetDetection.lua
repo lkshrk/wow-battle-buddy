@@ -2,7 +2,7 @@ BattleBuddyTargetDetection = {}
 
 local Detection = BattleBuddyTargetDetection
 local Public = BattleBuddyCompatibility.PublicValueOfType
-local catalog, frame
+local catalog, frame, targetStore, latestObservation, latestSource
 local gossipOpen = false
 local current = { state = "unresolved", candidateIDs = {} }
 local recent = {}
@@ -42,6 +42,7 @@ local function Identity(unit)
 end
 
 local function Observe(unit, nameplate)
+    if Public(Read(UnitIsPlayer, unit), "boolean") == true then return nil end
     local npcID, excluded = Identity(unit)
     local observation = {
         npcID = npcID,
@@ -51,9 +52,6 @@ local function Observe(unit, nameplate)
         gossipTexts = {}, publicTexts = {}, scenarioTexts = {},
     }
     if excluded then return nil end
-    if observation.name and (observation.name:sub(-3) == "..." or observation.name:sub(-3) == "…") then
-        observation.prefix = observation.name:gsub("%.%.%.$", ""):gsub("…$", "")
-    end
     local ownGossip = gossipOpen and (unit == "npc" or Public(Read(UnitIsUnit, unit, "npc"), "boolean") == true)
     if ownGossip and C_GossipInfo then
         AddText(observation.gossipTexts, Read(C_GossipInfo.GetText))
@@ -71,10 +69,17 @@ local function Observe(unit, nameplate)
     end
     if unit == "mouseover" then VisibleText(observation.publicTexts, GameTooltip, 5) end
     if nameplate then
-        AddText(observation.publicTexts, Read(UnitName, nameplate))
+        local name = Public(Read(UnitName, nameplate), "string")
+        AddText(observation.publicTexts, name)
+        if not observation.name then
+            observation.name = name
+        end
         if C_NamePlate then
             VisibleText(observation.publicTexts, Read(C_NamePlate.GetNamePlateForUnit, nameplate), 5)
         end
+    end
+    if observation.name and (observation.name:sub(-3) == "..." or observation.name:sub(-3) == "…") then
+        observation.prefix = observation.name:gsub("%.%.%.$", ""):gsub("…$", "")
     end
     if C_Scenario then
         AddText(observation.scenarioTexts, Read(C_Scenario.GetInfo))
@@ -90,12 +95,88 @@ local function Observe(unit, nameplate)
     return observation
 end
 
+local function Normalize(text)
+    return text and text:lower():match("^%s*(.-)%s*$"):gsub("[%p%s]+$", "") or ""
+end
+
+local function SavedTarget(store, observed)
+    if not store or not BattleBuddyTeams then return nil end
+    local function Find(texts, partial, phrases)
+        local matches, count, matched = {}, 0
+        for _, team in pairs(store.teamsByID) do
+            for _, key in ipairs(team.targets or {}) do
+                local name = team.targetNames and team.targetNames[key]
+                if not name and type(key) == "string" then name = key:match("^name:(.+)$") end
+                local wanted = Normalize(name)
+                for _, raw in ipairs(texts) do
+                    local text = Normalize(raw)
+                    local found = text ~= "" and wanted ~= "" and
+                        (text == wanted or (partial and wanted:sub(1, #text) == text))
+                    if phrases and wanted ~= "" then
+                        local from = 1
+                        while not found do
+                            local first, last = text:find(wanted, from, true)
+                            if not first then break end
+                            found = (first == 1 or not text:sub(first - 1, first - 1):match("[%w_]"))
+                                and (last == #text or not text:sub(last + 1, last + 1):match("[%w_]"))
+                            from = last + 1
+                        end
+                        if raw:match("%.%.%.%s*$") or raw:match("…%s*$") then
+                            local prefix = Normalize(raw:gsub("…%s*$", ""))
+                            found = found or (prefix ~= "" and wanted:sub(1, #prefix) == prefix)
+                        end
+                    end
+                    if found and not matches[key] then
+                        matches[key], count = true, count + 1
+                        matched = { key = key, npcID = type(key) == "number" and key or nil, name = name,
+                            state = "unique", candidateIDs = {} }
+                    end
+                end
+            end
+        end
+        if count > 1 then return { state = "ambiguous", ambiguous = true, candidateIDs = {} } end
+        return matched
+    end
+    local result = Find({ observed.name }) or Find({ observed.prefix }, true)
+    if result then return result end
+    for _, field in ipairs({ "gossipTexts", "publicTexts", "scenarioTexts" }) do
+        result = Find(observed[field], false, true)
+        if result then return result end
+    end
+end
+
+local function Resolve(store)
+    local observation = latestObservation
+    local result
+    if observation then
+        if not observation.npcID then result = SavedTarget(store, observation) end
+        result = result or BattleBuddyEncounterCatalog.Lookup(catalog, observation)
+        if observation.npcID then
+            result.key, result.npcID = observation.npcID, observation.npcID
+            result.state, result.ambiguous = "unique", nil
+        elseif result.state == "unique" then
+            result.key = result.key or result.npcID
+        elseif result.state == "ambiguous" then
+            result.ambiguous = true
+        elseif observation.name and not observation.prefix then
+            local name = Normalize(observation.name)
+            if name ~= "" then result.key, result.state = "name:" .. name, "unique" end
+        end
+        result.name = result.name or observation.name
+        if not result.name and result.encounter then result.name = result.encounter.display.fallbackLabel end
+    end
+    result = result or { state = "unresolved", candidateIDs = {} }
+    result.source = latestSource or "target"
+    return result
+end
+
 function Detection.Refresh(unit, nameplate)
     unit = Public(unit, "string") or "target"
     nameplate = Public(nameplate, "string")
     if nameplate and Public(Read(UnitIsUnit, nameplate, unit), "boolean") ~= true then nameplate = nil end
-    current = BattleBuddyEncounterCatalog.Lookup(catalog, Observe(unit, nameplate))
-    if current.state == "unique" then
+    latestObservation, latestSource = Observe(unit, nameplate), unit
+    current = Resolve(targetStore or BattleBuddyDB)
+    if current.state == "unique" and current.npcID then
         for index = #recent, 1, -1 do
             if recent[index] == current.npcID then table.remove(recent, index) end
         end
@@ -103,6 +184,25 @@ function Detection.Refresh(unit, nameplate)
         recent[4] = nil
     end
     return Detection.GetCurrent()
+end
+
+function Detection.Current()
+    current = Resolve(targetStore or BattleBuddyDB)
+    return Detection.GetCurrent()
+end
+
+function Detection.TeamsForCurrent(store)
+    store = store or targetStore or BattleBuddyDB
+    if not store then return {} end
+    local target = Resolve(store)
+    local teams = BattleBuddyTeams.ListByTarget(store, target.key)
+    if #teams == 0 and target.npcID then
+        local saved = SavedTarget(store, latestObservation)
+        if saved and type(saved.key) == "string" then
+            return BattleBuddyTeams.ListByTarget(store, saved.key)
+        end
+    end
+    return teams
 end
 
 function Detection.GetRecent()
@@ -119,8 +219,8 @@ function Detection.GetCurrent()
     return Copy(current)
 end
 
-function Detection.Start(view)
-    catalog = view
+function Detection.Start(view, store)
+    catalog, targetStore = view, store
     if not frame then
         frame = CreateFrame("Frame")
         for _, event in ipairs({ "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT", "PLAYER_SOFT_INTERACT_CHANGED",

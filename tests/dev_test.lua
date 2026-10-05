@@ -199,7 +199,7 @@ Frames.AssertVisible(second, false)
 state = NewRun()
 BattleBuddyConfig.SetSetting("devTools", true)
 state.options.capture = false
-first = state.View("manual")
+state.View("manual")
 BattleBuddyDev.RunShots(state.options)
 state.Tick()
 state.combat = true

@@ -60,4 +60,4 @@ wow-check BattleBuddy
 
 A game sync and publishing are separately gated.
 
-Run the existing tests from the repository root with `lua5.1 tests/<name>_test.lua .` for each file. Retail 12.1 validation must additionally cover secret/unavailable target and battle APIs: unresolved facts stay unknown, ambiguous target matches never auto-load, and UI refresh never dispatches actions. See the target and battle specs for Akolus workarounds and live-test gaps.
+Run `scripts/check.sh` (needs `lua5.1` and `luacheck`): TOC file list, luacheck and every `tests/*_test.lua`. CI runs the same on every push and pull request, then builds `BattleBuddy-<commit>.zip` with `scripts/package.sh` as a workflow artifact; nothing is published. `wow-check BattleBuddy` (LuaLS with WoW API annotations) runs in the nightshift WoW image. Retail 12.1 validation must additionally cover secret/unavailable target and battle APIs: unresolved facts stay unknown, ambiguous target matches never auto-load, and UI refresh never dispatches actions. See the target and battle specs for Akolus workarounds and live-test gaps.

@@ -168,7 +168,7 @@ function Script.CaptureSnapshot(api, inspectors, journal)
                 local speciesName = Get("GetName", 2, owner, slot)
                 if type(speciesName) == "string" then
                     local species = Read(journal, "FindPetIDByName", 1, inspectors, speciesName)
-                    local petID, petState = Read(journal, "FindPetIDByName", 2, inspectors, speciesName)
+                    local _, petState = Read(journal, "FindPetIDByName", 2, inspectors, speciesName)
                     if petState == "usable" then pet.collected = true
                     elseif petState == "unavailable" then pet.collected = false end
                     if type(species) == "number" then

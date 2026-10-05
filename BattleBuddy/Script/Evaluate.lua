@@ -230,7 +230,7 @@ function Script.Evaluate(script, snapshot, inspectors)
                 if node.children then
                     local result = walk(node.children)
                     if result then return result end
-                    state = "no_action"
+                    trace[#trace + 1] = { line = node.line, state = "no_action" }
                 else
                     local ok, result = pcall(action, node.action)
                     state = ok and (result and "selected" or "unavailable_action") or "unknown"

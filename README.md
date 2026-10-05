@@ -28,6 +28,8 @@ The loadout updates on journal events, with health, abilities, levels, models, a
 
 The pet list searches names, abilities and ability text. Combine text with comparisons such as `level=25 health>1400 power>=280 speed=250-300`; the HP, Power and Speed fields accept the same comparisons or inclusive ranges. The level-25 shortcut toggles max-level pets; right-click also requires rare quality. Family, Strong Vs and Tough Vs buttons filter the list. Owned rows support native cursor dragging; filtering never summons or changes the loadout. Breed text stays blank. The full Filter menu and pet-card/menu interactions are pending. `/bb dev shots` includes `window-pets`; live visual parity remains unverified.
 
+`BattleBuddyAlternatives` ranks owned slot replacements with differences and requires confirmation to edit a saved team; menu integration is pending.
+
 Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check it there to return to BattleBuddy. The choice is saved. Combat temporarily restores Blizzard’s journal and disables both toggles; BattleBuddy returns after combat if the pets journal remains open. The close button closes Collections.
 
 ## Battle statistics

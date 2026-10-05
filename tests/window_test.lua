@@ -264,7 +264,22 @@ for index, button in ipairs(buttons) do
         Frames.AssertAnchor(button, 1, { "RIGHT", buttons[index + 1], "LEFT", 0, 0 })
     end
     if index <= 6 then AssertEqual(button.template, "SecureActionButtonTemplate") end
-    if index >= 7 then AssertEqual(button:IsEnabled(), false) end
+    if index >= 7 then AssertEqual(button:IsEnabled(), button.key == "import") end
+end
+local imports = 0
+BattleBuddyTeamMenus = { Import = function(store)
+    AssertEqual(store, BattleBuddyDB)
+    imports = imports + 1
+end }
+for _, button in ipairs(buttons) do
+    if button.key == "import" then
+        Frames.Fire(button, "OnClick")
+        AssertEqual(imports, 1)
+        combat = true
+        Frames.Fire(button, "OnClick")
+        AssertEqual(imports, 1)
+        combat = false
+    end
 end
 AssertEqual(buttons[1]:GetAttribute("type"), "spell")
 AssertEqual(buttons[1]:GetAttribute("spell"), 125439)

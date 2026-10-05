@@ -108,6 +108,18 @@ end
 Frames.AssertText(row.name, "First team")
 Frames.AssertText(row.subtitle, "Target name")
 Frames.AssertShown(row.script, true)
+local scriptEdits = 0
+BattleBuddySaveTeamDialog = { Open = function(mode, opts)
+    Equal(mode, "save"); Equal(opts.teamID, team.teamID); Equal(opts.tab, "script")
+    Equal(opts.store, store)
+    scriptEdits = scriptEdits + 1
+end }
+Frames.Fire(row.script, "OnClick")
+Equal(scriptEdits, 1)
+combat = true
+Frames.Fire(row.script, "OnClick")
+Equal(scriptEdits, 1)
+combat = false
 P.Refresh(); Frames.Fire(row, "OnEnter")
 Equal(#sets, 0); Equal(loads, 0)
 Frames.Fire(row, "OnClick", "LeftButton")

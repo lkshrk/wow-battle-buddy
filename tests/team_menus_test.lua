@@ -7,9 +7,13 @@ dofile(root .. "/BattleBuddy/Compatibility.lua")
 dofile(root .. "/BattleBuddy/Store.lua")
 dofile(root .. "/BattleBuddy/Persistence.lua")
 dofile(root .. "/BattleBuddy/Teams.lua")
+dofile(root .. "/BattleBuddy/Script/Parser.lua")
+dofile(root .. "/BattleBuddy/Script/Share.lua")
 dofile(root .. "/BattleBuddy/TeamStrings.lua")
 dofile(root .. "/BattleBuddy/TeamMenus.lua")
 local T, M = BattleBuddyTeams, BattleBuddyTeamMenus
+local opened
+BattleBuddySaveTeamDialog = { Open = function(mode, opts) opened = { mode = mode, opts = opts }; return true end }
 local db = assert(T.Initialize(BattleBuddyStore.New()))
 local team = assert(T.CreateTeam(db, { name = "Test", pets = { "empty", "empty", "empty" }, tags = {{}, {}, {}} }))
 local dialog, refreshes = nil, 0
@@ -19,7 +23,11 @@ local function Find(entries, label)
     error("Missing menu entry: " .. label)
 end
 local entries = M.TeamEntries(db, team.teamID, callbacks)
-assert(Find(entries, "Edit Team").disabled == "Not available yet")
+assert(not Find(entries, "Edit Team").disabled)
+Find(entries, "Edit Team").action()
+assert(opened.mode == "save" and opened.opts.teamID == team.teamID and opened.opts.store == db)
+Find(entries, "Edit Script").action()
+assert(opened.opts.tab == "script" and opened.opts.teamID == team.teamID)
 assert(Find(entries, "Set Notes").action)
 assert(Find(entries, "Move Team").children)
 assert(Find(entries, "Share").children)
@@ -37,9 +45,9 @@ for _, label in ipairs({ "Create New Group", "Team Herder", "Import Teams", "Bac
 assert(Find(entries, "Team Herder").disabled == "Not available yet")
 Find(entries, "Import Teams").action()
 local importing = dialog
-assert(importing:Submit("Imported:::::"))
+assert(importing:Submit("Imported:::::\nSecond:::::"))
 assert(not T.FindByName(db, "Imported"), "Preview must not save teams")
-assert(importing.preview and importing.acceptLabel == "Import")
+assert(importing.preview and importing.acceptLabel == "Import 2 teams")
 assert(importing:Submit())
 assert(T.FindByName(db, "Imported"))
 local imported = T.FindByName(db, "Imported")
@@ -73,10 +81,7 @@ local function Description()
 end
 MenuUtil = { CreateContextMenu = function(owner, generate) generate(owner, Description()) end }
 M.Team({}, db, imported.teamID, callbacks)
-assert(rendered["Edit Team"].enabled == false)
-local reason
-rendered["Edit Team"].tooltip({ AddLine = function(_, value) reason = value end })
-assert(reason == "Not available yet")
+assert(rendered["Edit Team"].action and rendered["Edit Team"].enabled ~= false)
 assert(rendered["Export Team"].action)
 Find(M.TeamsEntries(db, callbacks), "Import Teams").action()
 assert(not dialog:Submit("not a team string"))

@@ -1,4 +1,4 @@
--- luacheck: globals BattleBuddyTeams BattleBuddyTeamStrings BattleBuddyCompatibility InCombatLockdown CreateFrame UIParent MenuUtil
+-- luacheck: globals BattleBuddyTeams BattleBuddyTeamStrings BattleBuddyCompatibility BattleBuddyScript BattleBuddySaveTeamDialog InCombatLockdown CreateFrame UIParent MenuUtil
 BattleBuddyTeamMenus = {}
 
 local M, T, X = BattleBuddyTeamMenus, BattleBuddyTeams, BattleBuddyTeamStrings
@@ -30,14 +30,33 @@ local function Present(model, callbacks)
             frame.model.deleteTeams = self:GetChecked() == true
         end)
         local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+        frame.scroll = scroll
         scroll:SetPoint("TOPLEFT", 16, -104)
-        scroll:SetPoint("BOTTOMRIGHT", -34, 48)
+        scroll:SetPoint("BOTTOMRIGHT", -34, 88)
         frame.edit = CreateFrame("EditBox", nil, scroll)
         frame.edit:SetSize(404, 180)
         frame.edit:SetMultiLine(true)
         frame.edit:SetAutoFocus(false)
         frame.edit:SetFontObject("ChatFontNormal")
         scroll:SetScrollChild(frame.edit)
+        frame.edit:SetScript("OnCursorChanged", function(_, _, y, _, height)
+            if not frame.model.import then return end
+            local public = BattleBuddyCompatibility.PublicValueOfType
+            y, height = public(y, "number"), public(height, "number")
+            local offset = public(scroll:GetVerticalScroll(), "number")
+            local visible = public(scroll:GetHeight(), "number")
+            local range = public(scroll:GetVerticalScrollRange(), "number")
+            if not y or not height or not offset or not visible or not range then return end
+            local top = -y
+            if top < offset then scroll:SetVerticalScroll(math.max(0, top))
+            elseif top + height > offset + visible then
+                scroll:SetVerticalScroll(math.min(range, top + height - visible))
+            end
+        end)
+        frame.error = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        frame.error:SetPoint("TOPLEFT", scroll, "BOTTOMLEFT", 0, -6)
+        frame.error:SetSize(424, 36)
+        frame.error:SetJustifyH("LEFT")
         frame.edit:SetScript("OnEscapePressed", function() frame:Hide() end)
         frame.accept = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
         frame.accept:SetSize(120, 24)
@@ -45,7 +64,10 @@ local function Present(model, callbacks)
         frame.accept:SetScript("OnClick", function()
             local current = frame.model
             local ok, reason = current:Submit(frame.edit:GetText())
-            if not ok then frame.message:SetText(reason or "Unable to complete this action")
+            frame.error:SetText("")
+            if not ok then
+                local feedback = current.import and frame.error or frame.message
+                feedback:SetText(reason or "Unable to complete this action")
             elseif current.done then frame:Hide()
             else
                 frame.message:SetText(current.message or "")
@@ -62,11 +84,14 @@ local function Present(model, callbacks)
     end
     local frame = dialogFrame
     frame.model = model
+    frame.scroll:SetPoint("BOTTOMRIGHT", -34, model.import and 88 or 48)
+    frame.scroll:SetVerticalScroll(0)
     frame.deleteTeams:SetShown(model.deleteTeams ~= nil)
     frame.deleteTeams:SetChecked(model.deleteTeams == true)
     frame.edit:SetShown(model.deleteTeams == nil)
     frame.TitleText:SetText(model.title)
     frame.message:SetText(model.message or "")
+    frame.error:SetText("")
     frame.edit:SetText(model.text or "")
     frame.accept:SetText(model.acceptLabel or "Save")
     frame:Show()
@@ -100,16 +125,73 @@ local function Export(callbacks, title, value, reason)
         reason or "Select the text and copy it.", "Okay")
 end
 
-local function Import(callbacks, store, groupID)
-    local model = { title = "Import Teams", text = "", acceptLabel = "Preview",
-        message = "Paste team strings. Existing names are imported as copies." }
+local function ImportScript(text)
+    if text:match("# Version: 2") and not text:match("^%s*#.-\n# Code Start\n.-\n# Code End%s*$") then
+        return nil, "Incomplete script share string."
+    end
+    if text:match("^%s*#") and (text:match("# Version: [12]") or text:find("(Script)", 1, true)) then
+        local document, reason = X.Decode(text)
+        reason = reason and reason:gsub("^.-:%d+: ", "")
+        if not document and reason ~= "Missing Rematch team metadata" and reason ~= "Missing team metadata" then
+            return nil, reason
+        end
+    end
+    return BattleBuddyScript.Import(text)
+end
+
+local function Classify(store, value)
+    if type(value) ~= "string" or #value > 1024 * 1024 or value:find("%z") then
+        return nil, nil, "Paste a team or PBS script (up to 1 MB)."
+    end
+    value = value:gsub("\r\n", "\n")
+    local preview = X.Import(store, value)
+    if preview then return preview end
+    local lines, candidate, index = {}, nil, nil
+    for line in (value .. "\n"):gmatch("(.-)\n") do
+        lines[#lines + 1] = line
+        local decoded = X.Import(store, line)
+        if decoded and decoded.kind == "team" then
+            if candidate then return nil, nil, "Paste multiple teams without a separate script." end
+            candidate, index = decoded, #lines
+        end
+    end
+    if candidate then table.remove(lines, index) end
+    local scriptText = table.concat(lines, "\n"):match("^%s*(.-)%s*$")
+    local script, reason = ImportScript(scriptText)
+    if not script then
+        return nil, nil, "Unable to read a team or PBS script: " .. tostring(reason):gsub("^.-:%d+: ", "")
+    end
+    if candidate then
+        local draft = candidate.teams[1]
+        if draft.script and draft.script ~= script then return nil, nil, "The pasted scripts differ. Keep only one script." end
+        draft.script = script
+        return candidate
+    end
+    return nil, { script = script }
+end
+
+function M.Import(store, callbacks, groupID)
+    callbacks = callbacks or {}
+    if Combat() then return nil, "Team changes are unavailable in combat." end
+    local model = { title = "Import Teams", text = "", acceptLabel = "Continue", import = true,
+        message = "Paste a team, PBS script, or both. Multiple teams are imported as copies." }
     function model:Submit(value)
         if Combat() then return nil, "Team changes are unavailable in combat." end
         if self.done then return nil, "This dialog is already complete" end
         if not self.preview then
-            local preview, reason = X.Import(store, value)
-            if not preview then return nil, reason end
-            self.preview, self.acceptLabel = preview, "Import"
+            local preview, draft, reason = Classify(store, value)
+            if not preview and not draft then return nil, reason end
+            local scriptOnly = draft ~= nil
+            if preview and preview.kind == "team" then draft = preview.teams[1] end
+            if draft then
+                draft.groupID = groupID or draft.groupID
+                local result, problem = BattleBuddySaveTeamDialog.Open("saveAs", {
+                    draft = draft, store = store, tab = scriptOnly and "script" or nil,
+                })
+                self.done = not not result
+                return result, problem
+            end
+            self.preview, self.acceptLabel = preview, "Import " .. #preview.teams .. " teams"
             local names, unresolved = {}, 0
             for index, team in ipairs(preview.teams) do
                 names[#names + 1] = team.name .. (preview.scriptPresent[index] and " (script included)" or "")
@@ -159,7 +241,9 @@ function M.TeamEntries(store, id, callbacks)
     if callbacks.loadedTeamID == id then
         entries[#entries + 1] = Entry("Unload Team", callbacks.unload, not callbacks.unload and "Not available yet" or nil)
     end
-    entries[#entries + 1] = Unavailable("Edit Team")
+    entries[#entries + 1] = Entry("Edit Team", function()
+        return BattleBuddySaveTeamDialog.Open("save", { teamID = id, store = store })
+    end)
     entries[#entries + 1] = Entry("Rename Team", function()
         Dialog(callbacks, "Rename Team", team.name, Action(callbacks, function(name) return T.EditTeam(store, id, { name = name }) end))
     end)
@@ -192,7 +276,9 @@ function M.TeamEntries(store, id, callbacks)
         end
         entries[#entries + 1] = Entry("Find Alternatives", nil, nil, slots)
     else entries[#entries + 1] = Unavailable("Find Alternatives") end
-    entries[#entries + 1] = Unavailable("Edit Script")
+    entries[#entries + 1] = Entry("Edit Script", function()
+        return BattleBuddySaveTeamDialog.Open("save", { teamID = id, store = store, tab = "script" })
+    end)
     entries[#entries + 1] = Entry("Delete Team", function()
         Dialog(callbacks, "Delete Team", nil, Action(callbacks, function() return T.DeleteTeam(store, id, true) end),
             "Delete " .. team.name .. "? This cannot be undone.", "Delete")
@@ -241,7 +327,7 @@ function M.GroupEntries(store, id, callbacks)
             end), "Delete this group? Teams move to Ungrouped unless you also choose to delete them.", "Delete", false)
         end, group.meta and "System groups cannot be deleted" or nil),
         Entry("Export Group", function() Export(callbacks, "Export Group", X.ExportGroup(store, id)) end),
-        Entry("Import Teams", function() Import(callbacks, store, id) end),
+        Entry("Import Teams", function() M.Import(store, callbacks, id) end),
         Entry("Delete Teams", function()
             Dialog(callbacks, "Delete Teams", nil, Action(callbacks, function()
                 for _, member in ipairs(T.ListTeams(store, id)) do T.DeleteTeam(store, member.teamID, true) end
@@ -258,7 +344,7 @@ function M.TeamsEntries(store, callbacks)
     return {
         Entry("Create New Group", function() NewGroup(store, callbacks) end),
         Unavailable("Team Herder"),
-        Entry("Import Teams", function() Import(callbacks, store) end),
+        Entry("Import Teams", function() M.Import(store, callbacks) end),
         Entry("Backup All Teams", function() Export(callbacks, "Backup All Teams", X.ExportBackup(store)) end),
         Entry("Help", function()
             Dialog(callbacks, "Teams", nil, function() return true end,

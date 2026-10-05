@@ -389,9 +389,19 @@ local function CreateWindow()
             Tooltip(button, action[2])
         else
             button.icon:SetTexture(action[4])
-            button:SetEnabled(false)
-            button:SetMotionScriptsWhileDisabled(true)
-            Tooltip(button, "Available in a later BattleBuddy slice")
+            if action[1] == "import" then
+                button:SetScript("OnClick", function()
+                    if InCombat() then return end
+                    BattleBuddyTeamMenus.Import(BattleBuddyDB, { refresh = function()
+                        if BattleBuddyTeamsPanel then BattleBuddyTeamsPanel.Refresh() end
+                    end })
+                end)
+                Tooltip(button, action[2])
+            else
+                button:SetEnabled(false)
+                button:SetMotionScriptsWhileDisabled(true)
+                Tooltip(button, "Available in a later BattleBuddy slice")
+            end
         end
     end
     toolbar.healArrow = CreateFrame("DropdownButton", nil, toolbar, "WowStyle1ArrowDropdownTemplate")

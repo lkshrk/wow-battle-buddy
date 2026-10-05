@@ -1,4 +1,4 @@
--- luacheck: globals BattleBuddyCompatibility BattleBuddyTeams BattleBuddyDB BattleBuddyLoadout BattleBuddyScript BattleBuddyTeamMenus BattleBuddyWindow C_PetJournal C_PetBattles InCombatLockdown CreateFrame CreateDataProvider CreateScrollBoxListLinearView ScrollUtil Menu GameTooltip UIErrorsFrame GetCursorPosition hooksecurefunc
+-- luacheck: globals BattleBuddyCompatibility BattleBuddyTeams BattleBuddyDB BattleBuddyLoadout BattleBuddyScript BattleBuddyTeamMenus BattleBuddySaveTeamDialog BattleBuddyWindow C_PetJournal C_PetBattles InCombatLockdown CreateFrame CreateDataProvider CreateScrollBoxListLinearView ScrollUtil Menu GameTooltip UIErrorsFrame GetCursorPosition hooksecurefunc
 BattleBuddyTeamsPanel = {}
 
 local P, T, C = BattleBuddyTeamsPanel, BattleBuddyTeams, BattleBuddyCompatibility
@@ -267,9 +267,12 @@ function P.BindRow(row, data)
         end)
         row.script = Button(row, 18, 18, "TOPRIGHT", -26, -3)
         row.script:SetNormalTexture("Interface\\Icons\\INV_Scroll_03")
-        row.script:SetScript("OnEnter", function(self) Tip(self, "Script: Not available yet") end)
+        row.script:SetScript("OnEnter", function(self) Tip(self, "Edit Script") end)
         row.script:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
-        row.script:SetScript("OnClick", function() Report("Script editing: Not available yet") end)
+        row.script:SetScript("OnClick", function()
+            if Combat() or row.data.kind ~= "team" then return end
+            BattleBuddySaveTeamDialog.Open("save", { store = Store(), teamID = row.data.teamID, tab = "script" })
+        end)
         row.notes = Icon(row, 14, 14, "TOPRIGHT", -46, -5)
         row.notes:SetTexture("Interface\\Icons\\INV_Misc_Note_01")
         row.target = Icon(row, 14, 14, "BOTTOMRIGHT", -26, 4)

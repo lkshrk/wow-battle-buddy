@@ -4,7 +4,7 @@ local Dialog = BattleBuddySaveTeamDialog
 local Teams, Compatibility = BattleBuddyTeams, BattleBuddyCompatibility
 local loadedStore, loadedID, registered
 local Refresh, Build
-local tabs = { "Team", "Targets", "Preferences", "Wins" }
+local tabs = { "Team", "Targets", "Preferences", "Wins", "Script" }
 local families = { "Humanoid", "Dragonkin", "Flying", "Undead", "Critter", "Magic", "Elemental", "Beast", "Aquatic", "Mechanical" }
 
 local function Copy(value)
@@ -117,6 +117,34 @@ function Dialog.SetName(value)
     Refresh()
 end
 
+function Dialog.SetScript(value)
+    Dialog.draft.script = value
+    Dialog.scriptMessage = nil
+    Refresh()
+end
+
+function Dialog.ValidateScript()
+    local _, errors = BattleBuddyScript.Parse(Dialog.draft.script or "")
+    local messages = {}
+    for _, err in ipairs(errors) do messages[#messages + 1] = "Line " .. err.line .. ": " .. err.message end
+    Dialog.scriptMessage = #messages > 0 and table.concat(messages, "\n") or "Script is valid."
+    Refresh()
+    return #messages == 0, Dialog.scriptMessage
+end
+
+function Dialog.ImportScript(text)
+    local code, err = BattleBuddyScript.Import(text)
+    if not code then Dialog.scriptMessage = err; Refresh(); return nil, err end
+    Dialog.SetScript(code)
+    return true
+end
+
+function Dialog.ExportScript()
+    local valid, err = Dialog.ValidateScript()
+    if not valid then return nil, err end
+    return BattleBuddyScript.Export(Dialog.draft.script or "", {name = Dialog.draft.name})
+end
+
 function Dialog.SetPreference(key, value)
     local allowed = {minXP = true, maxXP = true, minHP = true, maxHP = true, expectedDD = true, allowMM = true}
     if not allowed[key] then return false end
@@ -145,12 +173,13 @@ end
 
 function Dialog.SelectTab(tab)
     for _, name in ipairs(tabs) do
-        if name == tab then Dialog.tab = tab; Dialog.picking = false; Refresh(); return true end
+        if name:lower() == tab:lower() then Dialog.tab = name; Dialog.picking = false; Refresh(); return true end
     end
     return false
 end
 
 function Dialog.ClearTab(tab)
+    if (tab or Dialog.tab) == "Script" then Dialog.SetScript(""); return end
     local fields = {Targets = "targets", Preferences = "preferences", Wins = "winrecord"}
     local field = fields[tab or Dialog.tab]
     if field then
@@ -158,6 +187,7 @@ function Dialog.ClearTab(tab)
         if field == "targets" then Dialog.draft.targetNames = {}; Dialog.selected = nil end
     else
         Dialog.draft.targets, Dialog.draft.targetNames, Dialog.draft.preferences, Dialog.draft.winrecord = {}, {}, {}, {}
+        Dialog.draft.script, Dialog.scriptMessage = "", nil
         Dialog.selected = nil
     end
     Refresh()
@@ -198,6 +228,7 @@ function Dialog.Reset()
     Dialog.draft = Copy(Dialog.original)
     Dialog.tab, Dialog.selected, Dialog.picking = "Team", nil, false
     Dialog.frame.confirm:Hide()
+    Dialog.scriptMessage, Dialog.scriptTransfer = nil, nil
     Refresh()
 end
 
@@ -226,11 +257,13 @@ end
 function Dialog.Save(choice)
     local valid, reason = Dialog.CanSave()
     if not valid then return nil, reason end
+    valid, reason = Dialog.ValidateScript()
+    if not valid then Dialog.SelectTab("Script"); return nil, reason end
     local draft = Copy(Dialog.draft)
     draft.name = draft.name:match("^%s*(.-)%s*$")
     local owner = Teams.FindByName(Dialog.store, draft.name)
     local destination = Dialog.mode == "save" and Dialog.teamID or nil
-    if not destination and owner and Dialog.store == loadedStore and owner.teamID == loadedID and choice ~= "copy" then
+    if not destination and not Dialog.imported and owner and Dialog.store == loadedStore and owner.teamID == loadedID and choice ~= "copy" then
         destination = loadedID
     end
     if owner and owner.teamID ~= destination then
@@ -244,6 +277,7 @@ function Dialog.Save(choice)
     end
     draft.teamID = nil
     draft.notes, draft.script = draft.notes or "", draft.script or ""
+    if not draft.script:find("%S") then draft.script = "" end
     -- Validate the complete transaction before deleting a collided identity.
     local trial = Teams.Initialize(Dialog.store)
     if not trial then return nil, "unavailable_store" end
@@ -258,6 +292,7 @@ function Dialog.Save(choice)
     if not result then return nil, err end
     local callback = Dialog.onSaved
     Dialog.Close()
+    if BattleBuddyTeamsPanel then BattleBuddyTeamsPanel.Refresh() end
     if callback then callback(result.teamID) end
     return result.teamID
 end
@@ -273,10 +308,12 @@ function Dialog.Open(mode, opts)
     if id and not team then return nil, "unknown_team" end
     if mode == "save" and not team then return nil, "no_loaded_team" end
     Dialog.store, Dialog.mode, Dialog.teamID = store, mode, id
-    local draft = team or {name = "New Team", groupID = "group:none"}
-    Dialog.fromLoadout = not opts.teamID
+    Dialog.imported = opts.draft ~= nil
+    local draft = Copy(opts.draft or team or {name = "New Team", groupID = "group:none"})
+    draft.name = draft.name or "New Team"
+    Dialog.fromLoadout = not opts.teamID and not (opts.draft and opts.draft.pets)
     if Dialog.fromLoadout then draft.pets, draft.tags = Loadout() end
-    if mode == "saveAs" then draft.name = UniqueName(opts.teamID and draft.name or "New Team") end
+    if mode == "saveAs" and not opts.draft then draft.name = UniqueName(opts.teamID and draft.name or "New Team") end
     draft.teamID = nil
     if not Teams.GetGroup(store, draft.groupID) then draft.groupID = "group:none" end
     draft.targets, draft.targetNames = draft.targets or {}, draft.targetNames or {}
@@ -284,11 +321,13 @@ function Dialog.Open(mode, opts)
     draft.winrecord.battles = nil
     Dialog.draft, Dialog.onSaved = draft, opts.onSaved
     Dialog.tab, Dialog.selected, Dialog.picking, Dialog.query, Dialog.collapsed = "Team", nil, false, "", {}
+    Dialog.scriptMessage, Dialog.scriptTransfer = nil, nil
     if not Dialog.frame then Build() end
     if Menu and Menu.GetManager then Menu.GetManager():CloseMenus() end
     if Dialog.fromLoadout and BattleBuddyTargetDetection then Dialog.AddTarget(BattleBuddyTargetDetection.Current()) end
     Dialog.original = Copy(draft)
     Dialog.frame.confirm:Hide()
+    if opts.tab then Dialog.SelectTab(opts.tab) end
     Refresh()
     Dialog.frame:Show()
     Sound("IG_MAINMENU_OPEN")
@@ -341,6 +380,7 @@ local function Preview(parent, x, y)
         slot.icon = slot:CreateTexture(nil, "ARTWORK"); slot.icon:SetSize(44, 44)
         slot.icon:SetPoint("TOPLEFT", slot, "TOPLEFT", 0, -16)
         slot.level = Label(slot, "", 32, -50, "GameFontHighlightSmall")
+        slot.unresolved = Label(slot, "", 0, -67, "GameFontHighlightSmall")
         slot.favorite = Label(slot, "", 0, -16)
         slot.abilities = {}
         for tier = 1, 3 do
@@ -367,6 +407,7 @@ function Dialog.RenderPreview(preview, team)
         if not icon and species then local _, texture = Read("GetPetInfoBySpeciesID", species); icon = Number(texture) end
         slot.icon:SetTexture(icon or 134400)
         slot.level:SetText(level and tostring(level) or "")
+        slot.unresolved:SetText(species and type(pet) == "number" and "Unresolved" or "")
         slot.favorite:SetText(favorite and "*" or "")
         local colors = {{0.6, 0.6, 0.6}, {1, 1, 1}, {0.1, 1, 0.1}, {0, 0.5, 1}}
         local color = colors[quality or 1] or colors[1]
@@ -448,7 +489,7 @@ Build = function()
     local background = canvas:CreateTexture(nil, "BACKGROUND"); background:SetAllPoints(canvas)
     background:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
     for index, name in ipairs(tabs) do
-        local widths = {52, 62, 91, 47}
+        local widths = {52, 62, 91, 47, 58}
         local x = 6; for i = 1, index - 1 do x = x + widths[i] end
         f.tabs[name] = Button(canvas, name, x, -6, widths[index], function() Dialog.SelectTab(name) end)
         local page = CreateFrame("Frame", nil, canvas)
@@ -547,6 +588,49 @@ Build = function()
         Button(w, "+", 228, y, 24, function() Dialog.SetWins(key, (Dialog.draft.winrecord[key] or 0) + 1) end)
     end
     f.total = Label(w, "", 20, -148); f.rate = Label(w, "", 20, -174)
+    local scriptPage = f.pages.Script
+    local function ScriptEditor()
+        local scroll = CreateFrame("ScrollFrame", nil, scriptPage, "UIPanelScrollFrameTemplate")
+        scroll:SetSize(282, 166); scroll:SetPoint("TOPLEFT", scriptPage, "TOPLEFT", 12, -30)
+        local edit = CreateFrame("EditBox", nil, scroll)
+        edit:SetSize(282, 166); edit:SetMultiLine(true); edit:SetAutoFocus(false); edit:SetFontObject("GameFontHighlightSmall")
+        scroll:SetScrollChild(edit)
+        edit:SetScript("OnEscapePressed", Dialog.Close)
+        edit:SetScript("OnCursorChanged", function(_, _, y, _, height)
+            y = Compatibility.PublicValueOfType(y, "number")
+            height = Number(height)
+            local top, visible = Number(scroll:GetVerticalScroll()), Number(scroll:GetHeight())
+            if not y or not height or not top or not visible then return end
+            if -y < top then scroll:SetVerticalScroll(-y)
+            elseif -y + height > top + visible then scroll:SetVerticalScroll(-y + height - visible) end
+        end)
+        return edit, scroll
+    end
+    f.scriptTitle = Label(scriptPage, "PBS Script", 12, -6)
+    f.scriptEditor, f.scriptScroll = ScriptEditor()
+    f.scriptEditor:SetScript("OnTextChanged", function(self, user)
+        if user and not Dialog.refreshing then Dialog.SetScript(self:GetText()) end
+    end)
+    f.scriptShare, f.scriptShareScroll = ScriptEditor()
+    f.scriptFeedback = Label(scriptPage, "", 12, -201, "GameFontHighlightSmall")
+    f.scriptFeedback:SetSize(306, 30); f.scriptFeedback:SetJustifyH("LEFT")
+    f.scriptValidate = Button(scriptPage, "Validate", 12, -234, 94, Dialog.ValidateScript)
+    f.scriptImport = Button(scriptPage, "Import", 114, -234, 94, function()
+        if Dialog.scriptTransfer == "import" then
+            if not Dialog.ImportScript(f.scriptShare:GetText()) then return end
+            Dialog.scriptTransfer = nil
+        else
+            Dialog.scriptTransfer = "import"; f.scriptShare:SetText("")
+        end
+        Refresh()
+    end)
+    f.scriptExport = Button(scriptPage, "Export", 216, -234, 94, function()
+        local text = Dialog.ExportScript()
+        if not text then return end
+        Dialog.scriptTransfer = "export"; f.scriptShare:SetText(text); Refresh()
+        f.scriptShare:SetFocus(); f.scriptShare:HighlightText()
+    end)
+    f.scriptBack = Button(scriptPage, "Back", 12, -234, 94, function() Dialog.scriptTransfer = nil; Refresh() end)
     f.reset = Button(f, "Reset", 4, -359, 114, Dialog.Reset)
     f.save = Button(f, "Save", 124, -359, 114, function() Dialog.Save() end)
     f.cancel = Button(f, "Cancel", 244, -359, 116, Dialog.Close)
@@ -570,13 +654,21 @@ Refresh = function()
     if not f or not draft then return end
     Dialog.refreshing = true
     local content = {Targets = #draft.targets > 0, Preferences = next(draft.preferences) ~= nil,
-        Wins = Dialog.WinSummary().battles > 0}
+        Wins = Dialog.WinSummary().battles > 0, Script = (draft.script or ""):find("%S") ~= nil}
     for _, name in ipairs(tabs) do
         f.pages[name]:SetShown(Dialog.tab == name)
         f.tabs[name]:SetText((content[name] and "|cff66bbff" or "") .. name .. (content[name] and "|r" or ""))
         f.tabs[name]:SetEnabled(Dialog.tab ~= name)
     end
-    f.clear:SetShown(content.Targets or content.Preferences or content.Wins)
+    f.clear:SetShown(content.Targets or content.Preferences or content.Wins or content.Script)
+    if f.scriptEditor:GetText() ~= (draft.script or "") then f.scriptEditor:SetText(draft.script or "") end
+    f.scriptFeedback:SetText(Dialog.scriptMessage or "")
+    f.scriptScroll:SetShown(not Dialog.scriptTransfer)
+    f.scriptShareScroll:SetShown(Dialog.scriptTransfer ~= nil)
+    f.scriptTitle:SetText(Dialog.scriptTransfer == "import" and "Paste a PBS share string" or
+        Dialog.scriptTransfer == "export" and "Copy this PBS share string" or "PBS Script")
+    f.scriptValidate:SetShown(not Dialog.scriptTransfer); f.scriptBack:SetShown(Dialog.scriptTransfer ~= nil)
+    f.scriptImport:SetShown(Dialog.scriptTransfer ~= "export"); f.scriptExport:SetShown(not Dialog.scriptTransfer)
     f.name:SetText(draft.name); f.name.clear:SetShown(draft.name ~= "")
     f.group:OverrideText((Teams.GetGroup(Dialog.store, draft.groupID) or {}).name or "Ungrouped Teams")
     Dialog.RenderPreview(f.preview, draft)

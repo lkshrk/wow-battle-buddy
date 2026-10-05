@@ -283,7 +283,8 @@ local function Decode(text)
         script = assert(BattleBuddyScript.Import(text))
         ValidateScript(script)
         local metadata = ShareMetadata(text, shareVersion)
-        assert(metadata.plugin == "Rematch" and type(metadata.extra) == "string", "Missing Rematch team metadata")
+        assert(metadata.plugin == "Rematch" and metadata.extra ~= nil, "Missing Rematch team metadata")
+        assert(type(metadata.extra) == "string", "Invalid Rematch team metadata")
         text = metadata.extra
         assert(#text <= 1024 * 1024 and not text:find("%z"), "Invalid decoded team data")
     end

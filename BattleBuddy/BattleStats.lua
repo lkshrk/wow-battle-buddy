@@ -42,12 +42,47 @@ end
 function Stats.ReadPet(owner)
     local slot = Number(Read("GetActivePet", owner))
     if not slot or slot < 1 or slot > 3 then return {} end
+    local explode = false
+    for ability = 1, 3 do
+        if Number(Read("GetAbilityInfo", owner, slot, ability)) == 282 then explode = true end
+    end
     return {
         health = Read("GetHealth", owner, slot),
         maximum = Read("GetMaxHealth", owner, slot),
         power = Read("GetPower", owner, slot),
         speed = Read("GetSpeed", owner, slot),
+        family = Number(Read("GetPetType", owner, slot)),
+        explode = explode,
     }
+end
+
+local function HideTicks(side)
+    for _, tick in pairs(side.ticks) do tick:Hide() end
+end
+
+local function RenderTicks(display, index)
+    local side = display.sides[index]
+    HideTicks(side)
+    if not side.hovered or not BattleBuddyConfig.GetSetting("battleHealthTicks") then return end
+    local pet = display.pets and display.pets[index] or {}
+    local opponent = display.pets and display.pets[3 - index] or {}
+    local maximum, opposingMax = Number(pet.maximum), Number(opponent.maximum)
+    if not maximum or maximum == 0 then return end
+    local width = side.unit.HealthBarBG:GetWidth() - 10
+    for percent, tick in pairs(side.ticks) do
+        local fraction = percent / 100
+        local show = percent == 25 or percent == 50 or Number(pet.family) == 6
+        if percent == 40 then
+            show = Public(opponent.explode) == true and opposingMax and opposingMax > 0
+            fraction = show and opposingMax * 0.4 / maximum or 0
+        end
+        if show and fraction > 0 and fraction <= 1 then
+            local anchor = (percent == 40 and "TOP" or "BOTTOM") .. (index == 1 and "LEFT" or "RIGHT")
+            tick:ClearAllPoints()
+            tick:SetPoint(anchor, side.hover, anchor, width * fraction * (index == 1 and 1 or -1), 0)
+            tick:Show()
+        end
+    end
 end
 
 local function CreateDisplay(parent)
@@ -57,8 +92,35 @@ local function CreateDisplay(parent)
     display.round:SetPoint("TOP", parent, "TOP", -1, -17)
     display.round:Hide()
     for index, unit in ipairs({ parent.ActiveAlly, parent.ActiveEnemy }) do
-        local side = { unit = unit, healthShown = unit.HealthText:IsShown() }
+        local side = { unit = unit, healthShown = unit.HealthText:IsShown(), ticks = {} }
         display.sides[index] = side
+        side.hover = CreateFrame("Frame", nil, unit)
+        side.hover:SetPoint("TOPLEFT", unit.HealthBarBG, "TOPLEFT", 5, -5)
+        side.hover:SetPoint("BOTTOMRIGHT", unit.HealthBarBG, "BOTTOMRIGHT", -5, 5)
+        side.hover:EnableMouse(true)
+        side.hover:SetMouseClickEnabled(false)
+        for _, percent in ipairs({ 25, 50, 35, 70, 40 }) do
+            local tick = side.hover:CreateTexture(nil, "OVERLAY")
+            side.ticks[percent] = tick
+            tick:SetSize(6, 8)
+            if percent == 40 then tick:SetColorTexture(1, 0.5, 0, 1)
+            elseif percent == 35 or percent == 70 then tick:SetColorTexture(0.2, 0.5, 1, 1)
+            else tick:SetColorTexture(1, 0.85, 0, 1) end
+            tick:Hide()
+        end
+        side.hover:HookScript("OnEnter", function()
+            if InCombat() then return end
+            side.hovered = true
+            RenderTicks(display, index)
+        end)
+        side.hover:HookScript("OnLeave", function()
+            side.hovered = false
+            HideTicks(side)
+        end)
+        side.hover:HookScript("OnHide", function()
+            side.hovered = false
+            HideTicks(side)
+        end)
         side.row = CreateFrame("Frame", nil, unit)
         side.row:SetSize(165, 16)
         side.row:SetPoint("TOPLEFT", unit, index == 1 and "BOTTOMRIGHT" or "BOTTOMLEFT",
@@ -84,12 +146,15 @@ local function CreateDisplay(parent)
 end
 
 local function Render(display, pets, round)
+    display.pets = pets
     local showRound = BattleBuddyConfig.GetSetting("battleRound")
     round = Number(round)
     display.round:SetText(round and ("%.0f"):format(round) or "?")
     display.round:SetShown(showRound)
     display.parent.TopVersusText:SetShown(not showRound and display.versusShown)
     for index, side in ipairs(display.sides) do
+        side.hover:Show()
+        RenderTicks(display, index)
         local values = Stats.FormatStats(pets[index])
         side.row:SetShown(BattleBuddyConfig.GetSetting("battleStats"))
         side.unit.HealthText:SetShown(BattleBuddyConfig.GetSetting("battleHealth"))
@@ -107,6 +172,9 @@ local function Restore(display)
     display.round:Hide()
     display.parent.TopVersusText:SetShown(display.versusShown)
     for _, side in ipairs(display.sides) do
+        side.hovered = false
+        HideTicks(side)
+        side.hover:Hide()
         side.row:Hide()
         side.unit.HealthText:SetShown(side.healthShown)
     end

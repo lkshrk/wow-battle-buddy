@@ -11,6 +11,7 @@ BattleBuddyConfig = {
         battleRound = true,
         battleStats = true,
         battleHealth = true,
+        battleHealthTicks = true,
         enemyAbilitySize = 42,
         enemyAbilitySpacing = 6,
         enemyAbilityFont = "Fonts\\FRIZQT__.TTF",

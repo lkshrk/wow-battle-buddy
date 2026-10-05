@@ -40,7 +40,7 @@ Uncheck **BattleBuddy** beside Summon to restore Blizzard’s Pet Journal. Check
 
 The default Blizzard pet-battle frame shows frontline health percentage, power, and speed below both health bars. Native current/max health stays inside each bar. The Vs-circle indicator shows `?`: available evidence does not establish an absolute current round, and BattleBuddy never derives one from playback or PBS counters. Secret/unavailable percentages are hidden; unknown power and speed show `?`. Native health text retains Blizzard's display path.
 
-`battleRound`, `battleStats`, and `battleHealth` default to enabled through `BattleBuddyConfig`. The replica Options controls are not implemented yet; only defaults are added. Changes apply on the next pet-battle event. Presentation never loads teams or dispatches battle actions. `/bb dev on` followed by `/bb dev shots` includes a `battle-stats` view using synthetic data outside battle; it is a layout preview, not a full Blizzard battle-frame replica.
+`battleRound`, `battleStats`, and `battleHealth` default to enabled through `BattleBuddyConfig`. `battleHealthTicks` also defaults on: hover either frontline health bar for quarter/half ticks, magic-family 35%/70% ticks, and an opposing Explode estimate from readable max health; out-of-bar estimates are omitted. The replica Options controls are not implemented yet; only defaults are added. Changes apply on the next pet-battle event (ticks also update on hover). Presentation never loads teams or dispatches battle actions. `/bb dev on` followed by `/bb dev shots` includes a `battle-stats` view using synthetic data outside battle; it is a layout preview, not a full Blizzard battle-frame replica.
 
 ## Enemy abilities
 

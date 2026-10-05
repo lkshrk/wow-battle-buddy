@@ -36,6 +36,8 @@ Shift-drag moves the bar; Ctrl-wheel changes its scale by 1%, bounded to 50–20
 
 ## Reference licenses
 
+The engine in `BattleBuddy/Script/` ports PBS v1.13.1 under its MIT notice; share codecs use local implementations with no bundled library dependencies.
+
 Rematch, Akolus, BPBUIT, and PetTracker are ARR/unlicensed: factual own-word specifications only, with no copied code, XML, comments, long text, or assets. Screenshots are reference evidence, not distributable addon artwork. BreedID remains spec-only while its BSD terms are unresolved.
 
 The preserved PBS snapshot is MIT, pinned to **v1.13.1**, revision `fe78bd60049c559d9bf7d8d27a4039a2036b0241`; retain [its license](third_party/pbs/LICENSE.md) and separately applicable bundled-library notices. The [R0 index](docs/reference/rematch/README.md) records integration and verification limits.

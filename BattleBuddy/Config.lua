@@ -7,6 +7,9 @@ BattleBuddyConfig = {
         devTools = false,
         showPetJournalPanel = true,
         showRevisionDetails = false,
+        battleRound = true,
+        battleStats = true,
+        battleHealth = true,
     },
 }
 

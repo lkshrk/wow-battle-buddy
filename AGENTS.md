@@ -11,10 +11,19 @@
 
 BattleBuddy is a standalone current-retail pet-battle QoL addon. Prioritize repeat battlers, then strategy authors.
 
-- Build BattleBuddy-owned features; do not restore inherited interfaces, data migrations/imports, commands, or runtime dependencies.
-- Follow Blizzard’s default Pet Journal and pet-battle UI patterns. Extend native surfaces additively rather than creating a competing primary window.
-- Use Blizzard Settings for preferences.
+- R0 defines a 1:1 replica of the reference layout and interactions, independently implemented under BattleBuddy ownership. Follow `docs/reference/rematch/README.md`: screenshots win for depicted states; local source fills unseen behavior. Do not redesign a reference surface while reproducing it. Record intentional BattleBuddy additions separately.
+- Integrate PBS into the Save Team **Script** tab, team-row script action, and battle **Autobattle** control. No standalone PBS manager, editor, selector, minimap UI, or external PBS/Rematch runtime dependency. Keep its MIT notice and documented revision pin.
+- Use the current Akolus 12.1 battle panel with the selected BPBUIT extras in `docs/reference/rematch/battle.md`; do not combine competing battle control bars.
+- Later UltraSquirt functionality extends these existing surfaces and processes; do not restore its own windows or commands. Do not silently migrate inherited addon SavedVariables.
+- Phase A exposes only changed reference options and controls needed by shipped features. Preserve other reference defaults internally; do not expose inactive future settings. Use the replica Options surface for delivered controls; Blizzard Settings may remain an entry point without duplicating settings state.
 - Keep persistence, domain logic, client facts/actions, exchange codecs, and UI presenters independent as the architecture is added. UI refresh must never apply a team or dispatch a battle action.
+
+## Reference and license boundary
+
+- Rematch, Akolus, BPBUIT, and PetTracker are ARR/unlicensed references: own-word factual layout/interaction specifications only. Never copy their code, XML, comments, long text, or assets into BattleBuddy. Source asset paths in specs identify evidence, not permission to reuse it.
+- Preserve supplied screenshots as reference evidence; do not extract or ship their addon artwork. Recreate artwork independently or use appropriate native Blizzard UI resources.
+- PBS is MIT: retain `third_party/pbs/LICENSE.md`, attribution, and the pin in `docs/reference/rematch/README.md`. Audit bundled library notices before redistribution; the PBS license does not replace them.
+- BattlePetBreedID has incomplete BSD licensing evidence in this snapshot; treat it as spec-only until the terms and attribution are resolved. Later UltraSquirt reuse requires a separate license/dependency review.
 
 ## Current-retail API rules
 
@@ -22,6 +31,7 @@ Target retail WoW 12.1. Before changing a WoW API call, query it with `wow-api <
 
 - Prefer current namespaced APIs when available. Do not add removed legacy APIs or combat-log parsing.
 - Treat combat data as potentially secret. Do not compare, index with, or perform arithmetic on secret values.
+- Follow the Akolus 12.1 compatibility observations in the target/battle/breed specs: guard secret values before use, prefer public gossip/scenario/name evidence when target IDs are unavailable, reject ambiguous matches, and show unknown/omit details when ability or breed facts are unavailable. Protected calls do not make secret results safe. These observations require live verification; they are not permission to bypass API restrictions.
 - Do not change protected or secure frames in combat.
 
 ## Validation and testing

@@ -380,6 +380,7 @@ local function CreateWindow()
     local saved = type(BattleBuddyDB) == "table" and BattleBuddyDB.windowView
     Window.SelectView(labels[saved] and saved or "teams")
     frame:SetScript("OnShow", Refresh)
+    if BattleBuddyLoadout then BattleBuddyLoadout.Mount(frame) end
 end
 
 function Window.Show()

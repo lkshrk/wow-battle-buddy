@@ -5,7 +5,7 @@
 - `BattleBuddy/` is the addon directory installed in `_retail_/Interface/AddOns/`.
 - `BattleBuddy/BattleBuddy.toc` is the ordered runtime load manifest.
 - `BattleBuddy/BattleBuddy.lua` currently establishes the small product boundary and native entry points. Expand the addon through focused modules as milestones are delivered.
-- `.pkgmeta` drives the BigWigs packager: CI builds a zip on every push, and a `v*` tag publishes a release.
+- `.pkgmeta` drives the BigWigs packager: CI builds a zip on every push to `main` and every pull request, and a `vX.Y.Z` tag (`scripts/release.sh`) publishes a release once CI passes on its commit.
 
 ## Product rules
 
